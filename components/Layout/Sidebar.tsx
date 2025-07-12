@@ -1,4 +1,6 @@
-import React from 'react';
+'use client'
+
+import React from 'react'
 import { 
   Home, 
   Calendar, 
@@ -10,9 +12,17 @@ import {
   Settings,
   Moon,
   Sun
-} from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
-import { ViewType } from '../../types';
+} from 'lucide-react'
+import { useMutation } from '@apollo/client'
+import { UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations'
+import { GET_ME } from '@/lib/graphql/queries'
+
+type ViewType = 'dashboard' | 'calendar' | 'tasks' | 'finance' | 'notes' | 'pomodoro' | 'analytics' | 'settings'
+
+interface SidebarProps {
+  currentView: ViewType
+  onViewChange: (view: ViewType) => void
+}
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -23,22 +33,30 @@ const navigationItems = [
   { id: 'pomodoro', label: 'Pomodoro', icon: Timer },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: Settings },
-];
+]
 
-const Sidebar: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const { currentView, settings } = state;
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
+  const [updateSettings] = useMutation(UPDATE_USER_SETTINGS, {
+    refetchQueries: [{ query: GET_ME }],
+  })
 
-  const handleViewChange = (view: ViewType) => {
-    dispatch({ type: 'SET_VIEW', payload: view });
-  };
+  const toggleTheme = async () => {
+    const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark'
+    
+    try {
+      await updateSettings({
+        variables: {
+          input: { theme: newTheme }
+        }
+      })
+      
+      document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    } catch (error) {
+      console.error('Failed to update theme:', error)
+    }
+  }
 
-  const toggleTheme = () => {
-    const newTheme = settings.theme === 'light' ? 'dark' : 'light';
-    dispatch({ type: 'UPDATE_SETTINGS', payload: { theme: newTheme } });
-  };
-
-  const isDark = settings.theme === 'dark';
+  const isDark = document.documentElement.classList.contains('dark')
 
   return (
     <div className={`h-full flex flex-col ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} border-r border-gray-200 dark:border-gray-700 transition-colors duration-200`}>
@@ -53,13 +71,13 @@ const Sidebar: React.FC = () => {
       
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
+          const Icon = item.icon
+          const isActive = currentView === item.id
           
           return (
             <button
               key={item.id}
-              onClick={() => handleViewChange(item.id as ViewType)}
+              onClick={() => onViewChange(item.id as ViewType)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
@@ -69,7 +87,7 @@ const Sidebar: React.FC = () => {
               <Icon size={20} />
               <span className="font-medium">{item.label}</span>
             </button>
-          );
+          )
         })}
       </nav>
       
@@ -85,7 +103,7 @@ const Sidebar: React.FC = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

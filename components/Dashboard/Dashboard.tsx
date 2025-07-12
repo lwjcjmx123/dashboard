@@ -1,38 +1,71 @@
-import React from 'react';
-import { useApp } from '../../contexts/AppContext';
-import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { isToday, isThisWeek, formatDate, formatTime } from '../../utils/dateUtils';
+'use client'
 
-const Dashboard: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const { tasks, events, bills, notes, pomodoroSessions, settings } = state;
-  const isDark = settings.theme === 'dark';
+import React from 'react'
+import { useQuery } from '@apollo/client'
+import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
+import { GET_TASKS, GET_BILLS, GET_NOTES, GET_POMODORO_SESSIONS } from '@/lib/graphql/queries'
+
+interface DashboardProps {
+  onNavigate: (view: string) => void
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const { data: tasksData } = useQuery(GET_TASKS)
+  const { data: billsData } = useQuery(GET_BILLS)
+  const { data: notesData } = useQuery(GET_NOTES)
+  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS)
+
+  const tasks = tasksData?.tasks || []
+  const bills = billsData?.bills || []
+  const notes = notesData?.notes || []
+  const pomodoroSessions = pomodoroData?.pomodoroSessions || []
 
   // Calculate today's data
-  const todayTasks = tasks.filter(task => 
-    task.dueDate && isToday(new Date(task.dueDate))
-  );
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const totalTasks = tasks.length;
-  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const today = new Date()
+  const todayTasks = tasks.filter((task: any) => 
+    task.dueDate && new Date(task.dueDate).toDateString() === today.toDateString()
+  )
+  const completedTasks = tasks.filter((task: any) => task.completed).length
+  const totalTasks = tasks.length
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
-  const todayEvents = events.filter(event => 
-    isToday(new Date(event.startDate))
-  );
-
-  const upcomingBills = bills.filter(bill => 
+  const upcomingBills = bills.filter((bill: any) => 
     !bill.paid && new Date(bill.dueDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  ).slice(0, 5);
+  ).slice(0, 5)
 
-  const recentNotes = notes.slice(-5).reverse();
+  const recentNotes = notes.slice(-5).reverse()
 
-  const weeklyPomodoroSessions = pomodoroSessions.filter(session => 
+  const isThisWeek = (date: Date) => {
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - today.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+    
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+    
+    return date >= startOfWeek && date <= endOfWeek
+  }
+
+  const weeklyPomodoroSessions = pomodoroSessions.filter((session: any) => 
     isThisWeek(new Date(session.startTime))
-  ).length;
+  ).length
 
-  const handleNavigate = (view: string) => {
-    dispatch({ type: 'SET_VIEW', payload: view as any });
-  };
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  }
 
   const stats = [
     {
@@ -42,7 +75,7 @@ const Dashboard: React.FC = () => {
       icon: CheckSquare,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
-      onClick: () => handleNavigate('tasks'),
+      onClick: () => onNavigate('tasks'),
     },
     {
       label: 'Upcoming Bills',
@@ -51,7 +84,7 @@ const Dashboard: React.FC = () => {
       icon: DollarSign,
       color: 'text-red-600 dark:text-red-400',
       bgColor: 'bg-red-50 dark:bg-red-900/20',
-      onClick: () => handleNavigate('finance'),
+      onClick: () => onNavigate('finance'),
     },
     {
       label: 'Notes Created',
@@ -60,7 +93,7 @@ const Dashboard: React.FC = () => {
       icon: FileText,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      onClick: () => handleNavigate('notes'),
+      onClick: () => onNavigate('notes'),
     },
     {
       label: 'Pomodoro Sessions',
@@ -69,9 +102,9 @@ const Dashboard: React.FC = () => {
       icon: Timer,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      onClick: () => handleNavigate('pomodoro'),
+      onClick: () => onNavigate('pomodoro'),
     },
-  ];
+  ]
 
   return (
     <div className="p-6 space-y-6">
@@ -86,23 +119,19 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <Calendar size={16} />
-          <span>{formatDate(new Date(), settings.timeFormat)}</span>
+          <span>{formatDate(new Date())}</span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {stats.map((stat) => {
-          const Icon = stat.icon;
+          const Icon = stat.icon
           return (
             <div
               key={stat.label}
               onClick={stat.onClick}
-              className={`p-6 rounded-xl border cursor-pointer ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 hover:border-gray-600' 
-                  : 'bg-white border-gray-200 hover:border-gray-300'
-              } transition-all duration-200 hover:shadow-lg`}
+              className="p-6 rounded-xl border cursor-pointer bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
                 <div className={`p-3 rounded-lg ${stat.bgColor}`}>
@@ -124,18 +153,14 @@ const Dashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-          );
+          )
         })}
       </div>
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Today's Tasks */}
-        <div className={`p-6 rounded-xl border ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-white border-gray-200'
-        } transition-all duration-200`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Today's Tasks
@@ -148,12 +173,10 @@ const Dashboard: React.FC = () => {
                 No tasks scheduled for today
               </p>
             ) : (
-              todayTasks.slice(0, 5).map((task) => (
+              todayTasks.slice(0, 5).map((task: any) => (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  } transition-all duration-200`}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200"
                 >
                   <input
                     type="checkbox"
@@ -171,14 +194,14 @@ const Dashboard: React.FC = () => {
                     </p>
                     {task.dueDate && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Due: {formatTime(new Date(task.dueDate), settings.timeFormat)}
+                        Due: {formatTime(new Date(task.dueDate))}
                       </p>
                     )}
                   </div>
                   <div className={`w-2 h-2 rounded-full ${
-                    task.priority === 'urgent-important' ? 'bg-red-500' :
-                    task.priority === 'urgent-not-important' ? 'bg-yellow-500' :
-                    task.priority === 'not-urgent-important' ? 'bg-blue-500' :
+                    task.priority === 'URGENT_IMPORTANT' ? 'bg-red-500' :
+                    task.priority === 'URGENT_NOT_IMPORTANT' ? 'bg-yellow-500' :
+                    task.priority === 'NOT_URGENT_IMPORTANT' ? 'bg-blue-500' :
                     'bg-gray-500'
                   }`} />
                 </div>
@@ -187,52 +210,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Today's Events */}
-        <div className={`p-6 rounded-xl border ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-white border-gray-200'
-        } transition-all duration-200`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Today's Events
-            </h3>
-            <Calendar className="text-green-500" size={20} />
-          </div>
-          <div className="space-y-3">
-            {todayEvents.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No events scheduled for today
-              </p>
-            ) : (
-              todayEvents.slice(0, 5).map((event) => (
-                <div
-                  key={event.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  } transition-all duration-200`}
-                >
-                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: event.color }} />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {event.title}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTime(new Date(event.startDate), settings.timeFormat)} - {formatTime(new Date(event.endDate), settings.timeFormat)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
         {/* Upcoming Bills */}
-        <div className={`p-6 rounded-xl border ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-white border-gray-200'
-        } transition-all duration-200`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Upcoming Bills
@@ -245,19 +224,17 @@ const Dashboard: React.FC = () => {
                 No upcoming bills
               </p>
             ) : (
-              upcomingBills.map((bill) => (
+              upcomingBills.map((bill: any) => (
                 <div
                   key={bill.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  } transition-all duration-200`}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200"
                 >
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">
                       {bill.title}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Due: {formatDate(new Date(bill.dueDate), settings.timeFormat)}
+                      Due: {formatDate(new Date(bill.dueDate))}
                     </p>
                   </div>
                   <div className="text-right">
@@ -275,29 +252,23 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Notes */}
-        <div className={`p-6 rounded-xl border ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-white border-gray-200'
-        } transition-all duration-200`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Recent Notes
             </h3>
             <FileText className="text-purple-500" size={20} />
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {recentNotes.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8 col-span-2">
                 No notes created yet
               </p>
             ) : (
-              recentNotes.map((note) => (
+              recentNotes.map((note: any) => (
                 <div
                   key={note.id}
-                  className={`p-3 rounded-lg ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  } transition-all duration-200`}
+                  className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200"
                 >
                   <p className="font-medium text-gray-900 dark:text-white truncate">
                     {note.title}
@@ -306,7 +277,7 @@ const Dashboard: React.FC = () => {
                     {note.content}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    {formatDate(new Date(note.createdAt), settings.timeFormat)}
+                    {formatDate(new Date(note.createdAt))}
                   </p>
                 </div>
               ))
@@ -315,7 +286,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard
