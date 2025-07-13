@@ -1,24 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
-import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays } from '../../utils/dateUtils';
-import { Event } from '../../types';
+import { useQuery } from '@apollo/client';
+import { GET_TASKS, GET_BILLS, GET_POMODORO_SESSIONS, GET_EVENTS } from '@/lib/graphql/queries';
+import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays } from '@/utils/dateUtils';
 
 type CalendarView = 'month' | 'week' | 'day';
 
-const Calendar: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const { events, selectedDate, settings, tasks, bills, notes, pomodoroSessions } = state;
-  const isDark = settings.theme === 'dark';
+interface CalendarProps {
+  selectedDate: Date;
+  onDateSelect: (date: Date) => void;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
 
+  const { data: tasksData } = useQuery(GET_TASKS);
+  const { data: billsData } = useQuery(GET_BILLS);
+  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
+  const { data: eventsData } = useQuery(GET_EVENTS);
+
+  const tasks = tasksData?.tasks || [];
+  const bills = billsData?.bills || [];
+  const pomodoroSessions = pomodoroData?.pomodoroSessions || [];
+  const events = eventsData?.events || [];
+
   // Generate events from all data sources
-  const generateEventsFromData = (): Event[] => {
-    const generatedEvents: Event[] = [];
+  const generateEventsFromData = () => {
+    const generatedEvents: any[] = [];
 
     // Add task events
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       if (task.dueDate) {
         generatedEvents.push({
           id: `task-${task.id}`,
@@ -27,16 +39,16 @@ const Calendar: React.FC = () => {
           startDate: new Date(task.dueDate),
           endDate: new Date(task.dueDate),
           category: 'task',
-          color: task.priority === 'urgent-important' ? '#ef4444' :
-                 task.priority === 'urgent-not-important' ? '#f59e0b' :
-                 task.priority === 'not-urgent-important' ? '#3b82f6' : '#6b7280',
+          color: task.priority === 'URGENT_IMPORTANT' ? '#ef4444' :
+                 task.priority === 'URGENT_NOT_IMPORTANT' ? '#f59e0b' :
+                 task.priority === 'NOT_URGENT_IMPORTANT' ? '#3b82f6' : '#6b7280',
           taskId: task.id,
         });
       }
     });
 
     // Add bill events
-    bills.forEach(bill => {
+    bills.forEach((bill: any) => {
       generatedEvents.push({
         id: `bill-${bill.id}`,
         title: `Bill: ${bill.title}`,
@@ -50,7 +62,7 @@ const Calendar: React.FC = () => {
     });
 
     // Add pomodoro session events
-    pomodoroSessions.forEach(session => {
+    pomodoroSessions.forEach((session: any) => {
       generatedEvents.push({
         id: `pomodoro-${session.id}`,
         title: `Pomodoro: ${session.type}`,
@@ -58,7 +70,7 @@ const Calendar: React.FC = () => {
         startDate: new Date(session.startTime),
         endDate: new Date(session.endTime),
         category: 'pomodoro',
-        color: session.type === 'work' ? '#8b5cf6' : '#10b981',
+        color: session.type === 'WORK' ? '#8b5cf6' : '#10b981',
       });
     });
 
@@ -94,12 +106,8 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const selectDate = (date: Date) => {
-    dispatch({ type: 'SET_SELECTED_DATE', payload: date });
-  };
-
   const getEventsForDate = (date: Date) => {
-    return allEvents.filter(event => 
+    return allEvents.filter((event: any) => 
       new Date(event.startDate).toDateString() === date.toDateString()
     );
   };
@@ -143,11 +151,7 @@ const Calendar: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateDate('prev')}
-              className={`p-2 rounded-lg ${
-                isDark 
-                  ? 'hover:bg-gray-800 text-gray-400' 
-                  : 'hover:bg-gray-100 text-gray-600'
-              } transition-colors duration-200`}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors duration-200"
             >
               <ChevronLeft size={20} />
             </button>
@@ -156,11 +160,7 @@ const Calendar: React.FC = () => {
             </h3>
             <button
               onClick={() => navigateDate('next')}
-              className={`p-2 rounded-lg ${
-                isDark 
-                  ? 'hover:bg-gray-800 text-gray-400' 
-                  : 'hover:bg-gray-100 text-gray-600'
-              } transition-colors duration-200`}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors duration-200"
             >
               <ChevronRight size={20} />
             </button>
@@ -169,11 +169,7 @@ const Calendar: React.FC = () => {
         
         <div className="flex items-center gap-4">
           {/* View Toggle */}
-          <div className={`flex rounded-lg border ${
-            isDark 
-              ? 'bg-gray-800 border-gray-700' 
-              : 'bg-white border-gray-200'
-          }`}>
+          <div className="flex rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             {viewButtons.map((button) => (
               <button
                 key={button.id}
@@ -181,9 +177,7 @@ const Calendar: React.FC = () => {
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   view === button.id
                     ? 'bg-blue-600 text-white'
-                    : isDark
-                      ? 'text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 {button.label}
@@ -199,22 +193,14 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Calendar Grid */}
-      <div className={`rounded-xl border ${
-        isDark 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
-      } overflow-hidden`}>
+      <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Days of Week Header (for month and week view) */}
         {(view === 'month' || view === 'week') && (
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div
                 key={day}
-                className={`p-4 text-center font-medium text-sm ${
-                  isDark 
-                    ? 'bg-gray-700 text-gray-300' 
-                    : 'bg-gray-50 text-gray-700'
-                }`}
+                className="p-4 text-center font-medium text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 {day}
               </div>
@@ -233,13 +219,11 @@ const Calendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  onClick={() => selectDate(date)}
+                  onClick={() => onDateSelect(date)}
                   className={`min-h-[120px] p-3 border-b border-r border-gray-200 dark:border-gray-700 cursor-pointer transition-colors duration-200 ${
                     isSelected
                       ? 'bg-blue-50 dark:bg-blue-900/20'
-                      : isDark
-                        ? 'hover:bg-gray-700'
-                        : 'hover:bg-gray-50'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -254,7 +238,7 @@ const Calendar: React.FC = () => {
                     </span>
                     {dayEvents.length > 0 && (
                       <div className="flex items-center gap-1">
-                        {dayEvents.slice(0, 3).map((event, i) => (
+                        {dayEvents.slice(0, 3).map((event: any, i: number) => (
                           <div
                             key={i}
                             className="w-2 h-2 rounded-full"
@@ -271,14 +255,10 @@ const Calendar: React.FC = () => {
                   </div>
                   
                   <div className="space-y-1">
-                    {dayEvents.slice(0, 2).map((event, i) => (
+                    {dayEvents.slice(0, 2).map((event: any, i: number) => (
                       <div
                         key={i}
-                        className={`text-xs p-1 rounded truncate ${
-                          isDark 
-                            ? 'bg-gray-600 text-gray-200' 
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
+                        className="text-xs p-1 rounded truncate bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
                         style={{ borderLeft: `2px solid ${event.color}` }}
                       >
                         {event.title}
@@ -306,13 +286,11 @@ const Calendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  onClick={() => selectDate(date)}
+                  onClick={() => onDateSelect(date)}
                   className={`min-h-[200px] p-3 border-r border-gray-200 dark:border-gray-700 cursor-pointer transition-colors duration-200 ${
                     isSelected
                       ? 'bg-blue-50 dark:bg-blue-900/20'
-                      : isDark
-                        ? 'hover:bg-gray-700'
-                        : 'hover:bg-gray-50'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <div className="text-center mb-3">
@@ -328,14 +306,10 @@ const Calendar: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    {dayEvents.map((event, i) => (
+                    {dayEvents.map((event: any, i: number) => (
                       <div
                         key={i}
-                        className={`text-xs p-2 rounded ${
-                          isDark 
-                            ? 'bg-gray-600 text-gray-200' 
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
+                        className="text-xs p-2 rounded bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
                         style={{ borderLeft: `3px solid ${event.color}` }}
                       >
                         <div className="font-medium truncate">{event.title}</div>
@@ -362,12 +336,10 @@ const Calendar: React.FC = () => {
                   No events scheduled for this date
                 </p>
               ) : (
-                getEventsForDate(currentDate).map((event) => (
+                getEventsForDate(currentDate).map((event: any) => (
                   <div
                     key={event.id}
-                    className={`flex items-center gap-4 p-4 rounded-lg ${
-                      isDark ? 'bg-gray-700' : 'bg-gray-50'
-                    } transition-all duration-200`}
+                    className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200"
                   >
                     <div className="w-4 h-4 rounded-full" style={{ backgroundColor: event.color }} />
                     <div className="flex-1">
@@ -408,13 +380,9 @@ const Calendar: React.FC = () => {
 
       {/* Selected Date Events (for month view) */}
       {view === 'month' && selectedDate && (
-        <div className={`rounded-xl border ${
-          isDark 
-            ? 'bg-gray-800 border-gray-700' 
-            : 'bg-white border-gray-200'
-        } p-6`}>
+        <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Events for {formatDate(selectedDate, settings.timeFormat)}
+            Events for {formatDate(selectedDate, '24')}
           </h3>
           
           <div className="space-y-3">
@@ -423,12 +391,10 @@ const Calendar: React.FC = () => {
                 No events scheduled for this date
               </p>
             ) : (
-              getEventsForDate(selectedDate).map((event) => (
+              getEventsForDate(selectedDate).map((event: any) => (
                 <div
                   key={event.id}
-                  className={`flex items-center gap-4 p-4 rounded-lg ${
-                    isDark ? 'bg-gray-700' : 'bg-gray-50'
-                  } transition-all duration-200`}
+                  className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200"
                 >
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: event.color }} />
                   <div className="flex-1">

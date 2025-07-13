@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
 import { Plus, Search, Tag, Calendar, Edit3, Trash2, Archive, FileText } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
-import { Note } from '../../types';
-import { formatDate, generateId } from '../../utils/dateUtils';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_NOTES } from '@/lib/graphql/queries';
+import { CREATE_NOTE, UPDATE_NOTE, DELETE_NOTE } from '@/lib/graphql/mutations';
+import { formatDate } from '@/utils/dateUtils';
 import { marked } from 'marked';
 
 const Notes: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const { notes, settings } = state;
-  const isDark = settings.theme === 'dark';
+  const { data, loading, error } = useQuery(GET_NOTES);
+  const [createNote] = useMutation(CREATE_NOTE, {
+    refetchQueries: [{ query: GET_NOTES }],
+  });
+  const [updateNote] = useMutation(UPDATE_NOTE, {
+    refetchQueries: [{ query: GET_NOTES }],
+  });
+  const [deleteNote] = useMutation(DELETE_NOTE, {
+    refetchQueries: [{ query: GET_NOTES }],
+  });
+
+  const notes = data?.notes || [];
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [selectedNote, setSelectedNote] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [noteForm, setNoteForm] = useState({
     title: '',
@@ -22,83 +32,109 @@ const Notes: React.FC = () => {
     tagInput: '',
   });
 
-  const allTags = [...new Set(notes.flatMap(note => note.tags))];
+  const allTags = [...new Set(notes.flatMap((note: any) => note.tags?.map((tag: any) => tag.name) || []))];
   
-  const filteredNotes = notes.filter(note => {
+  const filteredNotes = notes.filter((note: any) => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          note.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = !selectedTag || note.tags.includes(selectedTag);
+    const matchesTag = !selectedTag || note.tags?.some((tag: any) => tag.name === selectedTag);
     const matchesArchived = showArchived || !note.archived;
     
     return matchesSearch && matchesTag && matchesArchived;
   });
 
-  const handleSelectNote = (note: Note) => {
+  const handleSelectNote = (note: any) => {
     setSelectedNote(note);
     setNoteForm({
       title: note.title,
       content: note.content,
-      tags: note.tags,
+      tags: note.tags?.map((tag: any) => tag.name) || [],
       tagInput: '',
     });
     setIsEditing(false);
   };
 
-  const handleNewNote = () => {
-    const newNote: Note = {
-      id: generateId(),
-      title: 'New Note',
-      content: '',
-      tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      linkedTasks: [],
-      linkedEvents: [],
-      archived: false,
-    };
-    
-    dispatch({ type: 'ADD_NOTE', payload: newNote });
-    setSelectedNote(newNote);
-    setNoteForm({
-      title: newNote.title,
-      content: newNote.content,
-      tags: newNote.tags,
-      tagInput: '',
-    });
-    setIsEditing(true);
+  const handleNewNote = async () => {
+    try {
+      const result = await createNote({
+        variables: {
+          input: {
+            title: 'New Note',
+            content: '',
+            tags: [],
+          },
+        },
+      });
+      
+      const newNote = result.data.createNote;
+      setSelectedNote(newNote);
+      setNoteForm({
+        title: newNote.title,
+        content: newNote.content,
+        tags: [],
+        tagInput: '',
+      });
+      setIsEditing(true);
+    } catch (error) {
+      console.error('Error creating note:', error);
+    }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!selectedNote || !noteForm.title) return;
     
-    const updatedNote: Note = {
-      ...selectedNote,
-      title: noteForm.title,
-      content: noteForm.content,
-      tags: noteForm.tags,
-      updatedAt: new Date(),
-    };
-    
-    dispatch({ type: 'UPDATE_NOTE', payload: updatedNote });
-    setSelectedNote(updatedNote);
-    setIsEditing(false);
+    try {
+      const result = await updateNote({
+        variables: {
+          input: {
+            id: selectedNote.id,
+            title: noteForm.title,
+            content: noteForm.content,
+            tags: noteForm.tags,
+          },
+        },
+      });
+      
+      setSelectedNote(result.data.updateNote);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating note:', error);
+    }
   };
 
-  const handleDeleteNote = (note: Note) => {
+  const handleDeleteNote = async (note: any) => {
     if (window.confirm('Are you sure you want to delete this note?')) {
-      dispatch({ type: 'DELETE_NOTE', payload: note.id });
-      if (selectedNote?.id === note.id) {
-        setSelectedNote(null);
-        setNoteForm({ title: '', content: '', tags: [], tagInput: '' });
+      try {
+        await deleteNote({
+          variables: { id: note.id },
+        });
+        
+        if (selectedNote?.id === note.id) {
+          setSelectedNote(null);
+          setNoteForm({ title: '', content: '', tags: [], tagInput: '' });
+        }
+      } catch (error) {
+        console.error('Error deleting note:', error);
       }
     }
   };
 
-  const handleArchiveNote = (note: Note) => {
-    const updatedNote = { ...note, archived: !note.archived };
-    dispatch({ type: 'UPDATE_NOTE', payload: updatedNote });
-    if (selectedNote?.id === note.id) {
-      setSelectedNote(updatedNote);
+  const handleArchiveNote = async (note: any) => {
+    try {
+      const result = await updateNote({
+        variables: {
+          input: {
+            id: note.id,
+            archived: !note.archived,
+          },
+        },
+      });
+      
+      if (selectedNote?.id === note.id) {
+        setSelectedNote(result.data.updateNote);
+      }
+    } catch (error) {
+      console.error('Error archiving note:', error);
     }
   };
 
@@ -134,12 +170,13 @@ const Notes: React.FC = () => {
     }
   };
 
+  if (loading) return <div className="p-6">Loading notes...</div>;
+  if (error) return <div className="p-6">Error loading notes: {error.message}</div>;
+
   return (
     <div className="flex h-full">
       {/* Left Sidebar - Notes List */}
-      <div className={`w-80 border-r ${
-        isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
-      } flex flex-col`}>
+      <div className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -163,11 +200,7 @@ const Notes: React.FC = () => {
               placeholder="Search notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
-                isDark 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -176,11 +209,7 @@ const Notes: React.FC = () => {
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border ${
-                isDark 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Tags</option>
               {allTags.map(tag => (
@@ -213,16 +242,14 @@ const Notes: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-1 p-2">
-              {filteredNotes.map((note) => (
+              {filteredNotes.map((note: any) => (
                 <div
                   key={note.id}
                   onClick={() => handleSelectNote(note)}
                   className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                     selectedNote?.id === note.id
                       ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                      : isDark
-                        ? 'hover:bg-gray-700'
-                        : 'hover:bg-gray-50'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   } ${note.archived ? 'opacity-60' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -255,15 +282,15 @@ const Notes: React.FC = () => {
                     {note.content || 'No content'}
                   </p>
                   
-                  {note.tags.length > 0 && (
+                  {note.tags && note.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {note.tags.slice(0, 3).map((tag, index) => (
+                      {note.tags.slice(0, 3).map((tag: any, index: number) => (
                         <span
                           key={index}
                           className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 text-xs rounded-full"
                         >
                           <Tag size={10} />
-                          {tag}
+                          {tag.name}
                         </span>
                       ))}
                       {note.tags.length > 3 && (
@@ -277,7 +304,7 @@ const Notes: React.FC = () => {
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <Calendar size={10} />
-                      {formatDate(new Date(note.updatedAt), settings.timeFormat)}
+                      {formatDate(new Date(note.updatedAt), '24')}
                     </span>
                     {note.archived && (
                       <span className="text-orange-500 dark:text-orange-400 font-medium">
@@ -297,9 +324,7 @@ const Notes: React.FC = () => {
         {selectedNote ? (
           <>
             {/* Note Header */}
-            <div className={`p-4 border-b ${
-              isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
-            }`}>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   {isEditing ? (
@@ -307,9 +332,7 @@ const Notes: React.FC = () => {
                       type="text"
                       value={noteForm.title}
                       onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                      className={`text-xl font-bold w-full bg-transparent border-none outline-none ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="text-xl font-bold w-full bg-transparent border-none outline-none text-gray-900 dark:text-white"
                       placeholder="Note title"
                     />
                   ) : (
@@ -318,7 +341,7 @@ const Notes: React.FC = () => {
                     </h1>
                   )}
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Last updated: {formatDate(new Date(selectedNote.updatedAt), settings.timeFormat)}
+                    Last updated: {formatDate(new Date(selectedNote.updatedAt), '24')}
                   </p>
                 </div>
                 
@@ -378,11 +401,7 @@ const Notes: React.FC = () => {
                       value={noteForm.tagInput}
                       onChange={(e) => setNoteForm({ ...noteForm, tagInput: e.target.value })}
                       onKeyPress={handleKeyPress}
-                      className={`flex-1 px-3 py-2 rounded-lg border ${
-                        isDark 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-200 text-gray-900'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className="flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Add a tag"
                     />
                     <button
@@ -394,15 +413,15 @@ const Notes: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                selectedNote.tags.length > 0 && (
+                selectedNote.tags && selectedNote.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {selectedNote.tags.map((tag, index) => (
+                    {selectedNote.tags.map((tag: any, index: number) => (
                       <span
                         key={index}
                         className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 text-xs rounded-full"
                       >
                         <Tag size={12} />
-                        {tag}
+                        {tag.name}
                       </span>
                     ))}
                   </div>
@@ -416,17 +435,11 @@ const Notes: React.FC = () => {
                 <textarea
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                  className={`w-full h-full resize-none border-none outline-none ${
-                    isDark 
-                      ? 'bg-gray-900 text-white' 
-                      : 'bg-white text-gray-900'
-                  }`}
+                  className="w-full h-full resize-none border-none outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                   placeholder="Write your note here... (Markdown supported)"
                 />
               ) : (
-                <div className={`prose max-w-none ${
-                  isDark ? 'prose-invert' : ''
-                }`}>
+                <div className="prose max-w-none prose-gray dark:prose-invert">
                   {selectedNote.content ? (
                     <div dangerouslySetInnerHTML={renderMarkdown(selectedNote.content)} />
                   ) : (

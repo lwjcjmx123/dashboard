@@ -1,24 +1,24 @@
 import React, { useState } from "react";
-import {
-  Plus,
-  Search,
-  Filter,
-  CheckSquare,
-  Clock,
-  AlertCircle,
-  Edit3,
-  Edit,
-  Edit2Icon,
-  SquarePen,
-} from "lucide-react";
-import { useApp } from "../../contexts/AppContext";
-import { Task } from "../../types";
-import { formatDate, generateId } from "../../utils/dateUtils";
+import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit3 } from "lucide-react";
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_TASKS } from '@/lib/graphql/queries';
+import { CREATE_TASK, UPDATE_TASK, DELETE_TASK } from '@/lib/graphql/mutations';
+import { formatDate } from '@/utils/dateUtils';
 
 const Tasks: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const { tasks, settings } = state;
-  const isDark = settings.theme === "dark";
+  const { data, loading, error } = useQuery(GET_TASKS);
+  const [createTask] = useMutation(CREATE_TASK, {
+    refetchQueries: [{ query: GET_TASKS }],
+  });
+  const [updateTask] = useMutation(UPDATE_TASK, {
+    refetchQueries: [{ query: GET_TASKS }],
+  });
+  const [deleteTask] = useMutation(DELETE_TASK, {
+    refetchQueries: [{ query: GET_TASKS }],
+  });
+
+  const tasks = data?.tasks || [];
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [showCompleted, setShowCompleted] = useState(false);
@@ -26,29 +26,25 @@ const Tasks: React.FC = () => {
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    priority: "not-urgent-important" as Task["priority"],
+    priority: "NOT_URGENT_IMPORTANT" as any,
     dueDate: "",
   });
 
   const priorityColors = {
-    "urgent-important":
-      "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
-    "urgent-not-important":
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
-    "not-urgent-important":
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-    "not-urgent-not-important":
-      "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+    "URGENT_IMPORTANT": "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+    "URGENT_NOT_IMPORTANT": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+    "NOT_URGENT_IMPORTANT": "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+    "NOT_URGENT_NOT_IMPORTANT": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
   };
 
   const priorityLabels = {
-    "urgent-important": "Urgent & Important",
-    "urgent-not-important": "Urgent",
-    "not-urgent-important": "Important",
-    "not-urgent-not-important": "Low Priority",
+    "URGENT_IMPORTANT": "Urgent & Important",
+    "URGENT_NOT_IMPORTANT": "Urgent",
+    "NOT_URGENT_IMPORTANT": "Important",
+    "NOT_URGENT_NOT_IMPORTANT": "Low Priority",
   };
 
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = tasks.filter((task: any) => {
     const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -59,61 +55,70 @@ const Tasks: React.FC = () => {
     return matchesSearch && matchesPriority && matchesCompleted;
   });
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!newTask.title) return;
 
-    const task: Task = {
-      id: generateId(),
-      title: newTask.title,
-      description: newTask.description,
-      completed: false,
-      priority: newTask.priority,
-      dueDate: newTask.dueDate ? new Date(newTask.dueDate) : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      tags: [],
-      subtasks: [],
-      timeSpent: 0,
-    };
+    try {
+      await createTask({
+        variables: {
+          input: {
+            title: newTask.title,
+            description: newTask.description,
+            priority: newTask.priority,
+            dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
+          },
+        },
+      });
 
-    dispatch({ type: "ADD_TASK", payload: task });
-    setNewTask({
-      title: "",
-      description: "",
-      priority: "not-urgent-important",
-      dueDate: "",
-    });
-    setShowAddForm(false);
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "NOT_URGENT_IMPORTANT",
+        dueDate: "",
+      });
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
   };
 
-  const toggleTask = (task: Task) => {
-    const updatedTask = {
-      ...task,
-      completed: !task.completed,
-      updatedAt: new Date(),
-    };
-    dispatch({ type: "UPDATE_TASK", payload: updatedTask });
+  const toggleTask = async (task: any) => {
+    try {
+      await updateTask({
+        variables: {
+          input: {
+            id: task.id,
+            completed: !task.completed,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
   };
 
-  const deleteTask = (id: string) => {
-    dispatch({ type: "DELETE_TASK", payload: id });
+  const handleDeleteTask = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteTask({
+          variables: { id },
+        });
+      } catch (error) {
+        console.error('Error deleting task:', error);
+      }
+    }
   };
 
   // Group tasks by priority for Eisenhower Matrix
   const groupedTasks = {
-    "urgent-important": filteredTasks.filter(
-      (t) => t.priority === "urgent-important"
-    ),
-    "urgent-not-important": filteredTasks.filter(
-      (t) => t.priority === "urgent-not-important"
-    ),
-    "not-urgent-important": filteredTasks.filter(
-      (t) => t.priority === "not-urgent-important"
-    ),
-    "not-urgent-not-important": filteredTasks.filter(
-      (t) => t.priority === "not-urgent-not-important"
-    ),
+    "URGENT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "URGENT_IMPORTANT"),
+    "URGENT_NOT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "URGENT_NOT_IMPORTANT"),
+    "NOT_URGENT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "NOT_URGENT_IMPORTANT"),
+    "NOT_URGENT_NOT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "NOT_URGENT_NOT_IMPORTANT"),
   };
+
+  if (loading) return <div className="p-6">Loading tasks...</div>;
+  if (error) return <div className="p-6">Error loading tasks: {error.message}</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -148,28 +153,20 @@ const Tasks: React.FC = () => {
             placeholder="Search tasks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
-              isDark
-                ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
-            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
-          className={`px-4 py-2 rounded-lg border ${
-            isDark
-              ? "bg-gray-800 border-gray-700 text-white"
-              : "bg-white border-gray-200 text-gray-900"
-          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          className="px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Priorities</option>
-          <option value="urgent-important">Urgent & Important</option>
-          <option value="urgent-not-important">Urgent</option>
-          <option value="not-urgent-important">Important</option>
-          <option value="not-urgent-not-important">Low Priority</option>
+          <option value="URGENT_IMPORTANT">Urgent & Important</option>
+          <option value="URGENT_NOT_IMPORTANT">Urgent</option>
+          <option value="NOT_URGENT_IMPORTANT">Important</option>
+          <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
         </select>
 
         <label className="flex items-center gap-2">
@@ -190,11 +187,7 @@ const Tasks: React.FC = () => {
         {Object.entries(groupedTasks).map(([priority, tasks]) => (
           <div
             key={priority}
-            className={`rounded-xl border ${
-              isDark
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            } p-6`}
+            className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -208,13 +201,13 @@ const Tasks: React.FC = () => {
                 >
                   {tasks.length}
                 </span>
-                {priority === "urgent-important" && (
+                {priority === "URGENT_IMPORTANT" && (
                   <AlertCircle className="text-red-500" size={16} />
                 )}
-                {priority === "urgent-not-important" && (
+                {priority === "URGENT_NOT_IMPORTANT" && (
                   <Clock className="text-yellow-500" size={16} />
                 )}
-                {priority === "not-urgent-important" && (
+                {priority === "NOT_URGENT_IMPORTANT" && (
                   <CheckSquare className="text-blue-500" size={16} />
                 )}
               </div>
@@ -226,14 +219,10 @@ const Tasks: React.FC = () => {
                   No tasks in this category
                 </p>
               ) : (
-                tasks.map((task) => (
+                tasks.map((task: any) => (
                   <div
                     key={task.id}
-                    className={`p-4 rounded-lg border transition-all duration-200 ${
-                      isDark
-                        ? "bg-gray-700 border-gray-600"
-                        : "bg-gray-50 border-gray-200"
-                    } hover:shadow-md`}
+                    className="p-4 rounded-lg border transition-all duration-200 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:shadow-md"
                   >
                     <div className="flex items-start gap-3">
                       <input
@@ -252,22 +241,6 @@ const Tasks: React.FC = () => {
                         >
                           {task.title}
                         </h4>
-                        <svg
-                          onClick={() => setShowAddForm(true)}
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="lucide lucide-square-pen-icon lucide-square-pen"
-                        >
-                          <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />
-                        </svg>
                         {task.description && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {task.description}
@@ -277,21 +250,17 @@ const Tasks: React.FC = () => {
                         <div className="flex items-center gap-4 mt-2">
                           {task.dueDate && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Due:{" "}
-                              {formatDate(
-                                new Date(task.dueDate),
-                                settings.timeFormat
-                              )}
+                              Due: {formatDate(new Date(task.dueDate), '24')}
                             </span>
                           )}
-                          {task.tags.length > 0 && (
+                          {task.tags && task.tags.length > 0 && (
                             <div className="flex gap-1">
-                              {task.tags.map((tag, index) => (
+                              {task.tags.map((tag: any, index: number) => (
                                 <span
                                   key={index}
                                   className="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-xs rounded-full text-gray-700 dark:text-gray-300"
                                 >
-                                  {tag}
+                                  {tag.name}
                                 </span>
                               ))}
                             </div>
@@ -299,7 +268,7 @@ const Tasks: React.FC = () => {
                         </div>
                       </div>
                       <button
-                        onClick={() => deleteTask(task.id)}
+                        onClick={() => handleDeleteTask(task.id)}
                         className="text-red-500 hover:text-red-600 transition-colors duration-200"
                       >
                         <svg
@@ -328,11 +297,7 @@ const Tasks: React.FC = () => {
       {/* Add Task Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div
-            className={`w-full max-w-md rounded-xl p-6 ${
-              isDark ? "bg-gray-800" : "bg-white"
-            }`}
-          >
+          <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Add New Task
             </h3>
@@ -348,11 +313,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, title: e.target.value })
                   }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-gray-200 text-gray-900"
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter task title"
                 />
               </div>
@@ -366,11 +327,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, description: e.target.value })
                   }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-gray-200 text-gray-900"
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter task description"
                   rows={3}
                 />
@@ -385,19 +342,15 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({
                       ...newTask,
-                      priority: e.target.value as Task["priority"],
+                      priority: e.target.value as any,
                     })
                   }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-gray-200 text-gray-900"
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="urgent-important">Urgent & Important</option>
-                  <option value="urgent-not-important">Urgent</option>
-                  <option value="not-urgent-important">Important</option>
-                  <option value="not-urgent-not-important">Low Priority</option>
+                  <option value="URGENT_IMPORTANT">Urgent & Important</option>
+                  <option value="URGENT_NOT_IMPORTANT">Urgent</option>
+                  <option value="NOT_URGENT_IMPORTANT">Important</option>
+                  <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
                 </select>
               </div>
 
@@ -411,11 +364,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, dueDate: e.target.value })
                   }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-gray-200 text-gray-900"
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -423,11 +372,7 @@ const Tasks: React.FC = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddForm(false)}
-                className={`flex-1 px-4 py-2 rounded-lg border ${
-                  isDark
-                    ? "border-gray-600 text-gray-300 hover:bg-gray-700"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-50"
-                } transition-colors duration-200`}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
               >
                 Cancel
               </button>

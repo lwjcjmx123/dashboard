@@ -1,57 +1,66 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Clock, CheckSquare, DollarSign, FileText } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
-import { isThisWeek, isToday, minutesToHours } from '../../utils/dateUtils';
+import { useQuery } from '@apollo/client';
+import { GET_TASKS, GET_POMODORO_SESSIONS, GET_EXPENSES, GET_NOTES, GET_BILLS } from '@/lib/graphql/queries';
+import { isThisWeek, isToday, minutesToHours } from '@/utils/dateUtils';
 
 const Analytics: React.FC = () => {
-  const { state } = useApp();
-  const { tasks, pomodoroSessions, expenses, notes, bills, settings } = state;
-  const isDark = settings.theme === 'dark';
+  const { data: tasksData } = useQuery(GET_TASKS);
+  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
+  const { data: expensesData } = useQuery(GET_EXPENSES);
+  const { data: notesData } = useQuery(GET_NOTES);
+  const { data: billsData } = useQuery(GET_BILLS);
+
+  const tasks = tasksData?.tasks || [];
+  const pomodoroSessions = pomodoroData?.pomodoroSessions || [];
+  const expenses = expensesData?.expenses || [];
+  const notes = notesData?.notes || [];
+  const bills = billsData?.bills || [];
 
   // Calculate metrics
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasks = tasks.filter((task: any) => task.completed).length;
   const totalTasks = tasks.length;
   const taskCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  const todayTasks = tasks.filter(task => 
+  const todayTasks = tasks.filter((task: any) => 
     task.dueDate && isToday(new Date(task.dueDate))
   );
-  const todayCompletedTasks = todayTasks.filter(task => task.completed).length;
+  const todayCompletedTasks = todayTasks.filter((task: any) => task.completed).length;
   const todayTasksRate = todayTasks.length > 0 ? (todayCompletedTasks / todayTasks.length) * 100 : 0;
 
-  const weeklyPomodoros = pomodoroSessions.filter(session => 
-    isThisWeek(new Date(session.startTime)) && session.type === 'work'
+  const weeklyPomodoros = pomodoroSessions.filter((session: any) => 
+    isThisWeek(new Date(session.startTime)) && session.type === 'WORK'
   );
-  const weeklyPomodoroTime = weeklyPomodoros.reduce((sum, session) => sum + session.duration, 0);
+  const weeklyPomodoroTime = weeklyPomodoros.reduce((sum: number, session: any) => sum + session.duration, 0);
 
-  const thisWeekExpenses = expenses.filter(expense => 
+  const thisWeekExpenses = expenses.filter((expense: any) => 
     isThisWeek(new Date(expense.date))
   );
-  const weeklyExpenseTotal = thisWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const weeklyExpenseTotal = thisWeekExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
 
-  const unpaidBills = bills.filter(bill => !bill.paid);
-  const unpaidBillsTotal = unpaidBills.reduce((sum, bill) => sum + bill.amount, 0);
+  const unpaidBills = bills.filter((bill: any) => !bill.paid);
+  const unpaidBillsTotal = unpaidBills.reduce((sum: number, bill: any) => sum + bill.amount, 0);
 
-  const weeklyNotes = notes.filter(note => 
+  const weeklyNotes = notes.filter((note: any) => 
     isThisWeek(new Date(note.createdAt))
   );
 
   // Priority distribution
   const priorityDistribution = {
-    'urgent-important': tasks.filter(t => t.priority === 'urgent-important').length,
-    'urgent-not-important': tasks.filter(t => t.priority === 'urgent-not-important').length,
-    'not-urgent-important': tasks.filter(t => t.priority === 'not-urgent-important').length,
-    'not-urgent-not-important': tasks.filter(t => t.priority === 'not-urgent-not-important').length,
+    'URGENT_IMPORTANT': tasks.filter((t: any) => t.priority === 'URGENT_IMPORTANT').length,
+    'URGENT_NOT_IMPORTANT': tasks.filter((t: any) => t.priority === 'URGENT_NOT_IMPORTANT').length,
+    'NOT_URGENT_IMPORTANT': tasks.filter((t: any) => t.priority === 'NOT_URGENT_IMPORTANT').length,
+    'NOT_URGENT_NOT_IMPORTANT': tasks.filter((t: any) => t.priority === 'NOT_URGENT_NOT_IMPORTANT').length,
   };
 
   // Expense categories
-  const expenseCategories = expenses.reduce((acc, expense) => {
+  const expenseCategories = expenses.reduce((acc: any, expense: any) => {
     acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
 
   const topExpenseCategories = Object.entries(expenseCategories)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 5);
 
   // Weekly activity data (last 7 days)
@@ -59,16 +68,16 @@ const Analytics: React.FC = () => {
     const date = new Date();
     date.setDate(date.getDate() - i);
     
-    const dayTasks = tasks.filter(task => 
+    const dayTasks = tasks.filter((task: any) => 
       task.updatedAt && new Date(task.updatedAt).toDateString() === date.toDateString()
     );
-    const dayPomodoros = pomodoroSessions.filter(session => 
+    const dayPomodoros = pomodoroSessions.filter((session: any) => 
       new Date(session.startTime).toDateString() === date.toDateString()
     );
-    const dayExpenses = expenses.filter(expense => 
+    const dayExpenses = expenses.filter((expense: any) => 
       new Date(expense.date).toDateString() === date.toDateString()
     );
-    const dayNotes = notes.filter(note => 
+    const dayNotes = notes.filter((note: any) => 
       new Date(note.createdAt).toDateString() === date.toDateString()
     );
 
@@ -80,6 +89,8 @@ const Analytics: React.FC = () => {
       notes: dayNotes.length,
     };
   }).reverse();
+
+  const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
 
   const stats = [
     {
@@ -141,9 +152,7 @@ const Analytics: React.FC = () => {
           return (
             <div
               key={stat.label}
-              className={`p-6 rounded-xl border ${
-                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-              } transition-all duration-200 hover:shadow-lg`}
+              className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
                 <div className={`p-3 rounded-lg ${stat.bgColor}`}>
@@ -177,9 +186,7 @@ const Analytics: React.FC = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly Activity Chart */}
-        <div className={`p-6 rounded-xl border ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Weekly Activity
           </h3>
@@ -225,26 +232,24 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Task Priority Distribution */}
-        <div className={`p-6 rounded-xl border ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Task Priority Distribution
           </h3>
           <div className="space-y-4">
             {Object.entries(priorityDistribution).map(([priority, count]) => {
-              const percentage = totalTasks > 0 ? (count / totalTasks) * 100 : 0;
+              const percentage = totalTasks > 0 ? ((count as number) / totalTasks) * 100 : 0;
               const colors = {
-                'urgent-important': 'bg-red-500',
-                'urgent-not-important': 'bg-yellow-500',
-                'not-urgent-important': 'bg-blue-500',
-                'not-urgent-not-important': 'bg-gray-500',
+                'URGENT_IMPORTANT': 'bg-red-500',
+                'URGENT_NOT_IMPORTANT': 'bg-yellow-500',
+                'NOT_URGENT_IMPORTANT': 'bg-blue-500',
+                'NOT_URGENT_NOT_IMPORTANT': 'bg-gray-500',
               };
               const labels = {
-                'urgent-important': 'Urgent & Important',
-                'urgent-not-important': 'Urgent',
-                'not-urgent-important': 'Important',
-                'not-urgent-not-important': 'Low Priority',
+                'URGENT_IMPORTANT': 'Urgent & Important',
+                'URGENT_NOT_IMPORTANT': 'Urgent',
+                'NOT_URGENT_IMPORTANT': 'Important',
+                'NOT_URGENT_NOT_IMPORTANT': 'Low Priority',
               };
               
               return (
@@ -257,7 +262,7 @@ const Analytics: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {count}
+                      {count as number}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       ({percentage.toFixed(1)}%)
@@ -270,9 +275,7 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Top Expense Categories */}
-        <div className={`p-6 rounded-xl border ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Top Expense Categories
           </h3>
@@ -283,8 +286,7 @@ const Analytics: React.FC = () => {
               </p>
             ) : (
               topExpenseCategories.map(([category, amount]) => {
-                const totalExpenses = Object.values(expenseCategories).reduce((sum, val) => sum + val, 0);
-                const percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+                const percentage = totalExpenses > 0 ? ((amount as number) / totalExpenses) * 100 : 0;
                 
                 return (
                   <div key={category} className="flex items-center justify-between">
@@ -296,7 +298,7 @@ const Analytics: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        ${amount.toFixed(2)}
+                        ${(amount as number).toFixed(2)}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         ({percentage.toFixed(1)}%)
@@ -310,9 +312,7 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Productivity Insights */}
-        <div className={`p-6 rounded-xl border ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Productivity Insights
           </h3>
@@ -323,7 +323,7 @@ const Analytics: React.FC = () => {
               </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {pomodoroSessions.length > 0 
-                  ? minutesToHours(pomodoroSessions.reduce((sum, s) => sum + s.duration, 0) / pomodoroSessions.length)
+                  ? minutesToHours(pomodoroSessions.reduce((sum: number, s: any) => sum + s.duration, 0) / pomodoroSessions.length)
                   : '0m'
                 }
               </span>
@@ -343,7 +343,7 @@ const Analytics: React.FC = () => {
                 Overdue tasks
               </span>
               <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                {tasks.filter(task => 
+                {tasks.filter((task: any) => 
                   task.dueDate && new Date(task.dueDate) < new Date() && !task.completed
                 ).length}
               </span>
