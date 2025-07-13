@@ -1,15 +1,23 @@
 import React, { useState } from "react";
-import { Plus, Search, CheckSquare, Clock, AlertCircle, Edit3 } from "lucide-react";
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_TASKS } from '@/lib/graphql/queries';
-import { CREATE_TASK, UPDATE_TASK, DELETE_TASK } from '@/lib/graphql/mutations';
-import { formatDate } from '@/utils/dateUtils';
+import {
+  Plus,
+  Search,
+  CheckSquare,
+  Clock,
+  AlertCircle,
+  Edit3,
+} from "lucide-react";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_TASKS } from "@/lib/graphql/queries";
+import { CREATE_TASK, UPDATE_TASK, DELETE_TASK } from "@/lib/graphql/mutations";
+import { formatDate } from "@/utils/dateUtils";
 
 const Tasks: React.FC = () => {
   const { data, loading, error } = useQuery(GET_TASKS);
   const [createTask] = useMutation(CREATE_TASK, {
     refetchQueries: [{ query: GET_TASKS }],
   });
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [updateTask] = useMutation(UPDATE_TASK, {
     refetchQueries: [{ query: GET_TASKS }],
   });
@@ -18,7 +26,7 @@ const Tasks: React.FC = () => {
   });
 
   const tasks = data?.tasks || [];
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [showCompleted, setShowCompleted] = useState(false);
@@ -31,17 +39,21 @@ const Tasks: React.FC = () => {
   });
 
   const priorityColors = {
-    "URGENT_IMPORTANT": "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
-    "URGENT_NOT_IMPORTANT": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
-    "NOT_URGENT_IMPORTANT": "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-    "NOT_URGENT_NOT_IMPORTANT": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+    URGENT_IMPORTANT:
+      "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+    URGENT_NOT_IMPORTANT:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+    NOT_URGENT_IMPORTANT:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+    NOT_URGENT_NOT_IMPORTANT:
+      "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
   };
 
   const priorityLabels = {
-    "URGENT_IMPORTANT": "Urgent & Important",
-    "URGENT_NOT_IMPORTANT": "Urgent",
-    "NOT_URGENT_IMPORTANT": "Important",
-    "NOT_URGENT_NOT_IMPORTANT": "Low Priority",
+    URGENT_IMPORTANT: "Urgent & Important",
+    URGENT_NOT_IMPORTANT: "Urgent",
+    NOT_URGENT_IMPORTANT: "Important",
+    NOT_URGENT_NOT_IMPORTANT: "Low Priority",
   };
 
   const filteredTasks = tasks.filter((task: any) => {
@@ -65,7 +77,9 @@ const Tasks: React.FC = () => {
             title: newTask.title,
             description: newTask.description,
             priority: newTask.priority,
-            dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
+            dueDate: newTask.dueDate
+              ? new Date(newTask.dueDate).toISOString()
+              : null,
           },
         },
       });
@@ -78,7 +92,7 @@ const Tasks: React.FC = () => {
       });
       setShowAddForm(false);
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error("Error creating task:", error);
     }
   };
 
@@ -93,32 +107,62 @@ const Tasks: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error("Error updating task:", error);
+    }
+  };
+
+  const handleEditTask = async (updatedTask: any) => {
+    try {
+      await updateTask({
+        variables: {
+          input: {
+            id: updatedTask.id,
+            title: updatedTask.title,
+            description: updatedTask.description,
+            priority: updatedTask.priority,
+            dueDate: updatedTask.dueDate
+              ? new Date(updatedTask.dueDate).toISOString()
+              : null,
+          },
+        },
+      });
+      setEditingTask(null);
+    } catch (error) {
+      console.error("Error updating task:", error);
     }
   };
 
   const handleDeleteTask = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
+    if (window.confirm("Are you sure you want to delete this task?")) {
       try {
         await deleteTask({
           variables: { id },
         });
       } catch (error) {
-        console.error('Error deleting task:', error);
+        console.error("Error deleting task:", error);
       }
     }
   };
 
   // Group tasks by priority for Eisenhower Matrix
   const groupedTasks = {
-    "URGENT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "URGENT_IMPORTANT"),
-    "URGENT_NOT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "URGENT_NOT_IMPORTANT"),
-    "NOT_URGENT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "NOT_URGENT_IMPORTANT"),
-    "NOT_URGENT_NOT_IMPORTANT": filteredTasks.filter((t: any) => t.priority === "NOT_URGENT_NOT_IMPORTANT"),
+    URGENT_IMPORTANT: filteredTasks.filter(
+      (t: any) => t.priority === "URGENT_IMPORTANT"
+    ),
+    URGENT_NOT_IMPORTANT: filteredTasks.filter(
+      (t: any) => t.priority === "URGENT_NOT_IMPORTANT"
+    ),
+    NOT_URGENT_IMPORTANT: filteredTasks.filter(
+      (t: any) => t.priority === "NOT_URGENT_IMPORTANT"
+    ),
+    NOT_URGENT_NOT_IMPORTANT: filteredTasks.filter(
+      (t: any) => t.priority === "NOT_URGENT_NOT_IMPORTANT"
+    ),
   };
 
   if (loading) return <div className="p-6">Loading tasks...</div>;
-  if (error) return <div className="p-6">Error loading tasks: {error.message}</div>;
+  if (error)
+    return <div className="p-6">Error loading tasks: {error.message}</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -250,7 +294,7 @@ const Tasks: React.FC = () => {
                         <div className="flex items-center gap-4 mt-2">
                           {task.dueDate && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Due: {formatDate(new Date(task.dueDate), '24')}
+                              Due: {formatDate(new Date(task.dueDate), "24")}
                             </span>
                           )}
                           {task.tags && task.tags.length > 0 && (
@@ -267,24 +311,32 @@ const Tasks: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-500 hover:text-red-600 transition-colors duration-200"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingTask(task)}
+                          className="text-blue-500 hover:text-blue-600"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -294,7 +346,99 @@ const Tasks: React.FC = () => {
         ))}
       </div>
 
-      {/* Add Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Edit Task
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editingTask.title}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editingTask.description}
+                  onChange={(e) =>
+                    setEditingTask({
+                      ...editingTask,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Priority
+                </label>
+                <select
+                  value={editingTask.priority}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, priority: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="URGENT_IMPORTANT">Urgent & Important</option>
+                  <option value="URGENT_NOT_IMPORTANT">Urgent</option>
+                  <option value="NOT_URGENT_IMPORTANT">Important</option>
+                  <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={
+                    editingTask.dueDate
+                      ? new Date(editingTask.dueDate).toISOString().slice(0, 16)
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, dueDate: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingTask(null)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleEditTask(editingTask)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                保存修改
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
