@@ -1,34 +1,13 @@
 import React, { useState } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_BILLS, GET_EXPENSES } from '@/lib/graphql/queries';
-import { CREATE_BILL, UPDATE_BILL, DELETE_BILL, CREATE_EXPENSE, DELETE_EXPENSE } from '@/lib/graphql/mutations';
+import { useClientBills, useClientExpenses } from '@/lib/client-data-hooks';
 import { formatDate } from '@/utils/dateUtils';
 import DatePicker from '../UI/DatePicker';
 import dayjs from 'dayjs';
 
 const Finance: React.FC = () => {
-  const { data: billsData, loading: billsLoading } = useQuery(GET_BILLS);
-  const { data: expensesData, loading: expensesLoading } = useQuery(GET_EXPENSES);
-  
-  const [createBill] = useMutation(CREATE_BILL, {
-    refetchQueries: [{ query: GET_BILLS }],
-  });
-  const [updateBill] = useMutation(UPDATE_BILL, {
-    refetchQueries: [{ query: GET_BILLS }],
-  });
-  const [deleteBill] = useMutation(DELETE_BILL, {
-    refetchQueries: [{ query: GET_BILLS }],
-  });
-  const [createExpense] = useMutation(CREATE_EXPENSE, {
-    refetchQueries: [{ query: GET_EXPENSES }],
-  });
-  const [deleteExpense] = useMutation(DELETE_EXPENSE, {
-    refetchQueries: [{ query: GET_EXPENSES }],
-  });
-
-  const bills = billsData?.bills || [];
-  const expenses = expensesData?.expenses || [];
+  const { bills, loading: billsLoading, createBill, updateBill, deleteBill } = useClientBills();
+  const { expenses, loading: expensesLoading, createExpense, deleteExpense } = useClientExpenses();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'bills' | 'expenses' | 'budget'>('overview');
   const [showAddBill, setShowAddBill] = useState(false);
@@ -72,15 +51,11 @@ const Finance: React.FC = () => {
     
     try {
       await createBill({
-        variables: {
-          input: {
-            title: newBill.title,
-            amount: parseFloat(newBill.amount),
-            category: newBill.category,
-            dueDate: dayjs(newBill.dueDate).toISOString(),
-            recurring: newBill.recurring,
-          },
-        },
+        title: newBill.title,
+        amount: parseFloat(newBill.amount),
+        category: newBill.category,
+        dueDate: dayjs(newBill.dueDate).toISOString(),
+        recurring: newBill.recurring,
       });
       
       setNewBill({ title: '', amount: '', category: '', dueDate: '', recurring: false });
@@ -95,16 +70,12 @@ const Finance: React.FC = () => {
     
     try {
       await createExpense({
-        variables: {
-          input: {
-            title: newExpense.title,
-            amount: parseFloat(newExpense.amount),
-            category: newExpense.category,
-            date: dayjs(newExpense.date).toISOString(),
-            description: newExpense.description,
-            tags: [],
-          },
-        },
+        title: newExpense.title,
+        amount: parseFloat(newExpense.amount),
+        category: newExpense.category,
+        date: dayjs(newExpense.date).toISOString(),
+        description: newExpense.description,
+        tags: [],
       });
       
       setNewExpense({ 

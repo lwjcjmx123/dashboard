@@ -4,6 +4,33 @@ import { useQuery, useMutation } from '@apollo/client';
 import { GET_USER_SETTINGS } from '@/lib/graphql/queries';
 import { UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations';
 
+interface SelectSetting {
+  label: string;
+  description: string;
+  type: 'select';
+  value: string;
+  options: { value: string; label: string; }[];
+  onChange: (value: string) => void;
+}
+
+interface ToggleSetting {
+  label: string;
+  description: string;
+  type: 'toggle';
+  value: boolean;
+  onChange: (value: boolean) => void;
+}
+
+interface NumberSetting {
+  label: string;
+  description: string;
+  type: 'number';
+  value: number;
+  onChange: (value: number) => void;
+}
+
+type Setting = SelectSetting | ToggleSetting | NumberSetting;
+
 const Settings: React.FC = () => {
   const { data, loading } = useQuery(GET_USER_SETTINGS);
   const [updateSettings] = useMutation(UPDATE_USER_SETTINGS, {
@@ -50,7 +77,11 @@ const Settings: React.FC = () => {
     return <div className="p-6">Loading settings...</div>;
   }
 
-  const settingSections = [
+  const settingSections: {
+    title: string;
+    icon: any;
+    settings: Setting[];
+  }[] = [
     {
       title: 'Appearance',
       icon: settings.theme === 'dark' ? Sun : Moon,
@@ -250,10 +281,10 @@ const Settings: React.FC = () => {
                       {setting.type === 'select' && (
                         <select
                           value={setting.value}
-                          onChange={(e) => setting.onChange(e.target.value)}
+                          onChange={(e) => (setting.onChange as (value: string) => void)(e.target.value)}
                           className="px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {setting.options?.map((option) => (
+                          {(setting as SelectSetting).options?.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -263,7 +294,7 @@ const Settings: React.FC = () => {
                       
                       {setting.type === 'toggle' && (
                         <button
-                          onClick={() => setting.onChange(!setting.value)}
+                          onClick={() => (setting as ToggleSetting).onChange(!(setting as ToggleSetting).value)}
                           className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 ${
                             setting.value
                               ? 'bg-blue-600'
@@ -282,7 +313,7 @@ const Settings: React.FC = () => {
                         <input
                           type="number"
                           value={setting.value}
-                          onChange={(e) => setting.onChange(parseInt(e.target.value))}
+                          onChange={(e) => (setting as NumberSetting).onChange(parseInt(e.target.value))}
                           className="w-20 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       )}

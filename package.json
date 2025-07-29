@@ -11,7 +11,9 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "vercel-build": "prisma generate && next build",
+    "postinstall": "prisma generate || echo 'Prisma generate failed, using IndexedDB'"
   },
   "dependencies": {
     "@apollo/client": "^3.8.8",

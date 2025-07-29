@@ -1,4 +1,4 @@
-import { prisma } from '../prisma'
+import { getDataAdapter } from '../data-adapter'
 import { GraphQLScalarType, Kind } from 'graphql'
 
 // Custom DateTime scalar
@@ -27,7 +27,8 @@ export const resolvers = {
 
   Query: {
     me: async () => {
-      let user = await prisma.user.findUnique({
+      const dataAdapter = getDataAdapter()
+      let user = await dataAdapter.user.findUnique({
         where: { id: DEMO_USER_ID },
         include: {
           tasks: { include: { tags: true, subtasks: true } },
@@ -41,7 +42,7 @@ export const resolvers = {
       })
 
       if (!user) {
-        user = await prisma.user.create({
+        user = await dataAdapter.user.create({
           data: {
             id: DEMO_USER_ID,
             email: 'demo@example.com',
@@ -72,7 +73,8 @@ export const resolvers = {
     },
 
     tasks: async () => {
-      return await prisma.task.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.task.findMany({
         where: { userId: DEMO_USER_ID },
         include: { tags: true, subtasks: true, children: true },
         orderBy: { createdAt: 'desc' },
@@ -80,14 +82,16 @@ export const resolvers = {
     },
 
     task: async (_: any, { id }: { id: string }) => {
-      return await prisma.task.findUnique({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.task.findUnique({
         where: { id },
         include: { tags: true, subtasks: true, children: true },
       })
     },
 
     events: async () => {
-      return await prisma.event.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.event.findMany({
         where: { userId: DEMO_USER_ID },
         include: { recurrence: true },
         orderBy: { startDate: 'asc' },
@@ -95,14 +99,16 @@ export const resolvers = {
     },
 
     bills: async () => {
-      return await prisma.bill.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.bill.findMany({
         where: { userId: DEMO_USER_ID },
         orderBy: { dueDate: 'asc' },
       })
     },
 
     expenses: async () => {
-      return await prisma.expense.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.expense.findMany({
         where: { userId: DEMO_USER_ID },
         include: { tags: true },
         orderBy: { date: 'desc' },
@@ -110,7 +116,8 @@ export const resolvers = {
     },
 
     notes: async () => {
-      return await prisma.note.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.note.findMany({
         where: { userId: DEMO_USER_ID },
         include: { tags: true },
         orderBy: { updatedAt: 'desc' },
@@ -118,14 +125,16 @@ export const resolvers = {
     },
 
     pomodoroSessions: async () => {
-      return await prisma.pomodoroSession.findMany({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.pomodoroSession.findMany({
         where: { userId: DEMO_USER_ID },
         orderBy: { startTime: 'desc' },
       })
     },
 
     userSettings: async () => {
-      return await prisma.userSettings.findUnique({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.userSettings.findUnique({
         where: { userId: DEMO_USER_ID },
       })
     },
@@ -133,8 +142,9 @@ export const resolvers = {
 
   Mutation: {
     createTask: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { tags, ...taskData } = input
-      return await prisma.task.create({
+      return await dataAdapter.task.create({
         data: {
           ...taskData,
           userId: DEMO_USER_ID,
@@ -147,8 +157,9 @@ export const resolvers = {
     },
 
     updateTask: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { id, ...updateData } = input
-      return await prisma.task.update({
+      return await dataAdapter.task.update({
         where: { id },
         data: updateData,
         include: { tags: true, subtasks: true },
@@ -156,12 +167,14 @@ export const resolvers = {
     },
 
     deleteTask: async (_: any, { id }: { id: string }) => {
-      await prisma.task.delete({ where: { id } })
+      const dataAdapter = getDataAdapter()
+      await dataAdapter.task.delete({ where: { id } })
       return true
     },
 
     createEvent: async (_: any, { input }: { input: any }) => {
-      return await prisma.event.create({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.event.create({
         data: {
           ...input,
           userId: DEMO_USER_ID,
@@ -171,8 +184,9 @@ export const resolvers = {
     },
 
     updateEvent: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { id, ...updateData } = input
-      return await prisma.event.update({
+      return await dataAdapter.event.update({
         where: { id },
         data: updateData,
         include: { recurrence: true },
@@ -180,12 +194,14 @@ export const resolvers = {
     },
 
     deleteEvent: async (_: any, { id }: { id: string }) => {
-      await prisma.event.delete({ where: { id } })
+      const dataAdapter = getDataAdapter()
+      await dataAdapter.event.delete({ where: { id } })
       return true
     },
 
     createBill: async (_: any, { input }: { input: any }) => {
-      return await prisma.bill.create({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.bill.create({
         data: {
           ...input,
           userId: DEMO_USER_ID,
@@ -194,21 +210,24 @@ export const resolvers = {
     },
 
     updateBill: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { id, ...updateData } = input
-      return await prisma.bill.update({
+      return await dataAdapter.bill.update({
         where: { id },
         data: updateData,
       })
     },
 
     deleteBill: async (_: any, { id }: { id: string }) => {
-      await prisma.bill.delete({ where: { id } })
+      const dataAdapter = getDataAdapter()
+      await dataAdapter.bill.delete({ where: { id } })
       return true
     },
 
     createExpense: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { tags, ...expenseData } = input
-      return await prisma.expense.create({
+      return await dataAdapter.expense.create({
         data: {
           ...expenseData,
           userId: DEMO_USER_ID,
@@ -221,13 +240,15 @@ export const resolvers = {
     },
 
     deleteExpense: async (_: any, { id }: { id: string }) => {
-      await prisma.expense.delete({ where: { id } })
+      const dataAdapter = getDataAdapter()
+      await dataAdapter.expense.delete({ where: { id } })
       return true
     },
 
     createNote: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { tags, ...noteData } = input
-      return await prisma.note.create({
+      return await dataAdapter.note.create({
         data: {
           ...noteData,
           userId: DEMO_USER_ID,
@@ -240,30 +261,27 @@ export const resolvers = {
     },
 
     updateNote: async (_: any, { input }: { input: any }) => {
+      const dataAdapter = getDataAdapter()
       const { id, tags, ...updateData } = input
       
-      // If tags are provided, replace all tags
-      if (tags) {
-        await prisma.noteTags.deleteMany({ where: { noteId: id } })
-        updateData.tags = {
-          create: tags.map((name: string) => ({ name }))
-        }
-      }
-
-      return await prisma.note.update({
+      // Note: For IndexedDB, we'll handle tags differently
+      // This is a simplified version that works with both adapters
+      return await dataAdapter.note.update({
         where: { id },
-        data: updateData,
+        data: { ...updateData, tags },
         include: { tags: true },
       })
     },
 
     deleteNote: async (_: any, { id }: { id: string }) => {
-      await prisma.note.delete({ where: { id } })
+      const dataAdapter = getDataAdapter()
+      await dataAdapter.note.delete({ where: { id } })
       return true
     },
 
     createPomodoroSession: async (_: any, { input }: { input: any }) => {
-      return await prisma.pomodoroSession.create({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.pomodoroSession.create({
         data: {
           ...input,
           userId: DEMO_USER_ID,
@@ -272,7 +290,8 @@ export const resolvers = {
     },
 
     updateUserSettings: async (_: any, { input }: { input: any }) => {
-      return await prisma.userSettings.upsert({
+      const dataAdapter = getDataAdapter()
+      return await dataAdapter.userSettings.upsert({
         where: { userId: DEMO_USER_ID },
         update: input,
         create: {

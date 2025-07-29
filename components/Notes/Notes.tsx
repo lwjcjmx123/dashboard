@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Search, Tag, Calendar, Edit3, Trash2, Archive, FileText } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_NOTES } from '@/lib/graphql/queries';
-import { CREATE_NOTE, UPDATE_NOTE, DELETE_NOTE } from '@/lib/graphql/mutations';
+import { useClientNotes } from '@/lib/client-data-hooks';
 import { formatDate } from '@/utils/dateUtils';
 import { marked } from 'marked';
 
 const Notes: React.FC = () => {
-  const { data, loading, error } = useQuery(GET_NOTES);
-  const [createNote] = useMutation(CREATE_NOTE, {
-    refetchQueries: [{ query: GET_NOTES }],
-  });
-  const [updateNote] = useMutation(UPDATE_NOTE, {
-    refetchQueries: [{ query: GET_NOTES }],
-  });
-  const [deleteNote] = useMutation(DELETE_NOTE, {
-    refetchQueries: [{ query: GET_NOTES }],
-  });
-
-  const notes = data?.notes || [];
+  const { notes, loading, error, createNote, updateNote, deleteNote } = useClientNotes();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -32,7 +19,7 @@ const Notes: React.FC = () => {
     tagInput: '',
   });
 
-  const allTags = [...new Set(notes.flatMap((note: any) => note.tags?.map((tag: any) => tag.name) || []))];
+  const allTags = Array.from(new Set(notes.flatMap((note: any) => note.tags?.map((tag: any) => tag.name) || []))) as string[];
   
   const filteredNotes = notes.filter((note: any) => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,17 +43,12 @@ const Notes: React.FC = () => {
 
   const handleNewNote = async () => {
     try {
-      const result = await createNote({
-        variables: {
-          input: {
-            title: 'New Note',
-            content: '',
-            tags: [],
-          },
-        },
+      const newNote = await createNote({
+        title: 'New Note',
+        content: '',
+        tags: [],
       });
       
-      const newNote = result.data.createNote;
       setSelectedNote(newNote);
       setNoteForm({
         title: newNote.title,
@@ -84,18 +66,14 @@ const Notes: React.FC = () => {
     if (!selectedNote || !noteForm.title) return;
     
     try {
-      const result = await updateNote({
-        variables: {
-          input: {
-            id: selectedNote.id,
-            title: noteForm.title,
-            content: noteForm.content,
-            tags: noteForm.tags,
-          },
-        },
+      const updatedNote = await updateNote({
+        id: selectedNote.id,
+        title: noteForm.title,
+        content: noteForm.content,
+        tags: noteForm.tags,
       });
       
-      setSelectedNote(result.data.updateNote);
+      setSelectedNote(updatedNote);
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating note:', error);
@@ -105,9 +83,7 @@ const Notes: React.FC = () => {
   const handleDeleteNote = async (note: any) => {
     if (window.confirm('Are you sure you want to delete this note?')) {
       try {
-        await deleteNote({
-          variables: { id: note.id },
-        });
+        await deleteNote(note.id);
         
         if (selectedNote?.id === note.id) {
           setSelectedNote(null);
@@ -121,17 +97,13 @@ const Notes: React.FC = () => {
 
   const handleArchiveNote = async (note: any) => {
     try {
-      const result = await updateNote({
-        variables: {
-          input: {
-            id: note.id,
-            archived: !note.archived,
-          },
-        },
+      const updatedNote = await updateNote({
+        id: note.id,
+        archived: !note.archived,
       });
       
       if (selectedNote?.id === note.id) {
-        setSelectedNote(result.data.updateNote);
+        setSelectedNote(updatedNote);
       }
     } catch (error) {
       console.error('Error archiving note:', error);

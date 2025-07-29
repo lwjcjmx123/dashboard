@@ -7,26 +7,13 @@ import {
   AlertCircle,
   Edit3,
 } from "lucide-react";
-import { useQuery, useMutation } from "@apollo/client";
-import { GET_TASKS } from "@/lib/graphql/queries";
-import { CREATE_TASK, UPDATE_TASK, DELETE_TASK } from "@/lib/graphql/mutations";
+import { useClientTasks } from "@/lib/client-data-hooks";
 import { formatDate } from "@/utils/dateUtils";
 import dayjs from "dayjs";
 
 const Tasks: React.FC = () => {
-  const { data, loading, error } = useQuery(GET_TASKS);
-  const [createTask] = useMutation(CREATE_TASK, {
-    refetchQueries: [{ query: GET_TASKS }],
-  });
+  const { tasks, loading, error, createTask, updateTask, deleteTask } = useClientTasks();
   const [editingTask, setEditingTask] = useState<any>(null);
-  const [updateTask] = useMutation(UPDATE_TASK, {
-    refetchQueries: [{ query: GET_TASKS }],
-  });
-  const [deleteTask] = useMutation(DELETE_TASK, {
-    refetchQueries: [{ query: GET_TASKS }],
-  });
-
-  const tasks = data?.tasks || [];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
@@ -73,16 +60,12 @@ const Tasks: React.FC = () => {
 
     try {
       await createTask({
-        variables: {
-          input: {
-            title: newTask.title,
-            description: newTask.description,
-            priority: newTask.priority,
-            dueDate: newTask.dueDate
-              ? dayjs(newTask.dueDate).toISOString()
-              : null,
-          },
-        },
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        dueDate: newTask.dueDate
+          ? dayjs(newTask.dueDate).toISOString()
+          : null,
       });
 
       setNewTask({
@@ -100,12 +83,8 @@ const Tasks: React.FC = () => {
   const toggleTask = async (task: any) => {
     try {
       await updateTask({
-        variables: {
-          input: {
-            id: task.id,
-            completed: !task.completed,
-          },
-        },
+        id: task.id,
+        completed: !task.completed,
       });
     } catch (error) {
       console.error("Error updating task:", error);
@@ -115,17 +94,13 @@ const Tasks: React.FC = () => {
   const handleEditTask = async (updatedTask: any) => {
     try {
       await updateTask({
-        variables: {
-          input: {
-            id: updatedTask.id,
-            title: updatedTask.title,
-            description: updatedTask.description,
-            priority: updatedTask.priority,
-            dueDate: updatedTask.dueDate
-              ? dayjs(updatedTask.dueDate).toISOString()
-              : null,
-          },
-        },
+        id: updatedTask.id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        priority: updatedTask.priority,
+        dueDate: updatedTask.dueDate
+          ? dayjs(updatedTask.dueDate).toISOString()
+          : null,
       });
       setEditingTask(null);
     } catch (error) {
@@ -136,9 +111,7 @@ const Tasks: React.FC = () => {
   const handleDeleteTask = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this task?")) {
       try {
-        await deleteTask({
-          variables: { id },
-        });
+        await deleteTask(id);
       } catch (error) {
         console.error("Error deleting task:", error);
       }
