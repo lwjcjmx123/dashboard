@@ -4,6 +4,8 @@ import { useQuery, useMutation } from '@apollo/client';
 import { GET_BILLS, GET_EXPENSES } from '@/lib/graphql/queries';
 import { CREATE_BILL, UPDATE_BILL, DELETE_BILL, CREATE_EXPENSE, DELETE_EXPENSE } from '@/lib/graphql/mutations';
 import { formatDate } from '@/utils/dateUtils';
+import DatePicker from '../UI/DatePicker';
+import dayjs from 'dayjs';
 
 const Finance: React.FC = () => {
   const { data: billsData, loading: billsLoading } = useQuery(GET_BILLS);
@@ -45,7 +47,7 @@ const Finance: React.FC = () => {
     amount: '',
     category: '',
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: dayjs().format('YYYY-MM-DD'),
   });
 
   // Calculate financial metrics
@@ -53,18 +55,12 @@ const Finance: React.FC = () => {
   const unpaidBills = bills.filter((bill: any) => !bill.paid).reduce((sum: number, bill: any) => sum + bill.amount, 0);
   const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
   const thisMonthExpenses = expenses.filter((expense: any) => {
-    const expenseDate = new Date(expense.date);
-    const now = new Date();
-    return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+    return dayjs().isSame(dayjs(expense.date), 'month');
   }).reduce((sum: number, expense: any) => sum + expense.amount, 0);
 
   const upcomingBills = bills.filter((bill: any) => {
-    const dueDate = new Date(bill.dueDate);
-    const now = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(now.getDate() + 7);
-    return !bill.paid && dueDate <= nextWeek;
-  }).sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    return !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, 'day'));
+  }).sort((a: any, b: any) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf());
 
   const expenseCategories = expenses.reduce((acc: any, expense: any) => {
     acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
@@ -81,7 +77,7 @@ const Finance: React.FC = () => {
             title: newBill.title,
             amount: parseFloat(newBill.amount),
             category: newBill.category,
-            dueDate: new Date(newBill.dueDate).toISOString(),
+            dueDate: dayjs(newBill.dueDate).toISOString(),
             recurring: newBill.recurring,
           },
         },
@@ -104,7 +100,7 @@ const Finance: React.FC = () => {
             title: newExpense.title,
             amount: parseFloat(newExpense.amount),
             category: newExpense.category,
-            date: new Date(newExpense.date).toISOString(),
+            date: dayjs(newExpense.date).toISOString(),
             description: newExpense.description,
             tags: [],
           },
@@ -116,7 +112,7 @@ const Finance: React.FC = () => {
         amount: '', 
         category: '', 
         description: '', 
-        date: new Date().toISOString().split('T')[0] 
+        date: dayjs().format('YYYY-MM-DD') 
       });
       setShowAddExpense(false);
     } catch (error) {
@@ -131,7 +127,7 @@ const Finance: React.FC = () => {
           input: {
             id: bill.id,
             paid: !bill.paid,
-            paidDate: !bill.paid ? new Date().toISOString() : null,
+            paidDate: !bill.paid ? dayjs().toISOString() : null,
           },
         },
       });
@@ -522,11 +518,10 @@ const Finance: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Due Date
                 </label>
-                <input
-                  type="date"
-                  value={newBill.dueDate}
-                  onChange={(e) => setNewBill({ ...newBill, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <DatePicker
+                  selected={newBill.dueDate ? dayjs(newBill.dueDate).toDate() : null}
+                  onChange={(date) => setNewBill({ ...newBill, dueDate: date ? dayjs(date).format('YYYY-MM-DD') : '' })}
+                  placeholder="Select due date"
                 />
               </div>
               
@@ -615,11 +610,10 @@ const Finance: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Date
                 </label>
-                <input
-                  type="date"
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <DatePicker
+                  selected={newExpense.date ? dayjs(newExpense.date).toDate() : null}
+                  onChange={(date) => setNewExpense({ ...newExpense, date: date ? dayjs(date).format('YYYY-MM-DD') : '' })}
+                  placeholder="Select date"
                 />
               </div>
               

@@ -2,17 +2,10 @@
 
 import React from 'react'
 import { Bell, Search, User } from 'lucide-react'
+import { formatDate } from '../../utils/dateUtils'
 
 interface HeaderProps {
   selectedDate: Date
-}
-
-const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
 }
 
 const Header: React.FC<HeaderProps> = ({ selectedDate }) => {

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { useQuery } from '@apollo/client';
 import { GET_TASKS, GET_BILLS, GET_POMODORO_SESSIONS, GET_EVENTS } from '@/lib/graphql/queries';
-import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays } from '@/utils/dateUtils';
+import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays, formatTime } from '@/utils/dateUtils';
+import dayjs from 'dayjs';
 
 type CalendarView = 'month' | 'week' | 'day';
 
@@ -108,25 +109,20 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
 
   const getEventsForDate = (date: Date) => {
     return allEvents.filter((event: any) => 
-      new Date(event.startDate).toDateString() === date.toDateString()
+      dayjs(event.startDate).isSame(dayjs(date), 'day')
     );
   };
 
   const getViewTitle = () => {
     switch (view) {
       case 'month':
-        return currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+        return dayjs(currentDate).format('MMMM YYYY');
       case 'week':
         const weekStart = getWeekDates(currentDate)[0];
         const weekEnd = getWeekDates(currentDate)[6];
-        return `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+        return `${dayjs(weekStart).format('MMM D')} - ${dayjs(weekEnd).format('MMM D, YYYY')}`;
       case 'day':
-        return currentDate.toLocaleDateString('default', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
+        return dayjs(currentDate).format('dddd, MMMM D, YYYY');
       default:
         return '';
     }
@@ -213,7 +209,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
           <div className="grid grid-cols-7">
             {dates.map((date, index) => {
               const dayEvents = getEventsForDate(date);
-              const isSelected = selectedDate.toDateString() === date.toDateString();
+              const isSelected = dayjs(selectedDate).isSame(dayjs(date), 'day');
               const isTodayDate = isToday(date);
               
               return (
@@ -280,7 +276,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
           <div className="grid grid-cols-7">
             {dates.map((date, index) => {
               const dayEvents = getEventsForDate(date);
-              const isSelected = selectedDate.toDateString() === date.toDateString();
+              const isSelected = dayjs(selectedDate).isSame(dayjs(date), 'day');
               const isTodayDate = isToday(date);
               
               return (
@@ -314,10 +310,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                       >
                         <div className="font-medium truncate">{event.title}</div>
                         <div className="text-xs opacity-75">
-                          {new Date(event.startDate).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
+                          {formatTime(new Date(event.startDate))}
                         </div>
                       </div>
                     ))}
@@ -352,13 +345,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                         </p>
                       )}
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        {new Date(event.startDate).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })} - {new Date(event.endDate).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                        {formatTime(new Date(event.startDate))} - {formatTime(new Date(event.endDate))}
                       </p>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -407,13 +394,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                       </p>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      {new Date(event.startDate).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })} - {new Date(event.endDate).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                      {formatTime(new Date(event.startDate))} - {formatTime(new Date(event.endDate))}
                     </p>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-medium ${

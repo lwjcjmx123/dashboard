@@ -4,6 +4,8 @@ import React from 'react'
 import { useQuery } from '@apollo/client'
 import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
 import { GET_TASKS, GET_BILLS, GET_NOTES, GET_POMODORO_SESSIONS } from '@/lib/graphql/queries'
+import { isThisWeek, formatDate, formatTime } from '../../utils/dateUtils'
+import dayjs from 'dayjs'
 
 interface DashboardProps {
   onNavigate: (view: string) => void
@@ -21,51 +23,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const pomodoroSessions = pomodoroData?.pomodoroSessions || []
 
   // Calculate today's data
-  const today = new Date()
   const todayTasks = tasks.filter((task: any) => 
-    task.dueDate && new Date(task.dueDate).toDateString() === today.toDateString()
+    task.dueDate && dayjs(task.dueDate).isSame(dayjs(), 'day')
   )
   const completedTasks = tasks.filter((task: any) => task.completed).length
   const totalTasks = tasks.length
   const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
   const upcomingBills = bills.filter((bill: any) => 
-    !bill.paid && new Date(bill.dueDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, 'day'))
   ).slice(0, 5)
 
   const recentNotes = notes.slice(-5).reverse()
 
-  const isThisWeek = (date: Date) => {
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - today.getDay())
-    startOfWeek.setHours(0, 0, 0, 0)
-    
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6)
-    endOfWeek.setHours(23, 59, 59, 999)
-    
-    return date >= startOfWeek && date <= endOfWeek
-  }
-
   const weeklyPomodoroSessions = pomodoroSessions.filter((session: any) => 
     isThisWeek(new Date(session.startTime))
   ).length
-
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-  }
 
   const stats = [
     {
@@ -119,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <Calendar size={16} />
-          <span>{formatDate(new Date())}</span>
+          <span>{formatDate(dayjs().toDate())}</span>
         </div>
       </div>
 

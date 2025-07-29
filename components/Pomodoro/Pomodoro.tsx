@@ -4,6 +4,8 @@ import { useQuery, useMutation } from '@apollo/client';
 import { GET_POMODORO_SESSIONS, GET_TASKS, GET_USER_SETTINGS } from '@/lib/graphql/queries';
 import { CREATE_POMODORO_SESSION, UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations';
 import { minutesToHours } from '@/utils/dateUtils';
+import dayjs from "dayjs";
+import { formatTime } from "../../utils/dateUtils";
 
 const Pomodoro: React.FC = () => {
   const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
@@ -38,7 +40,7 @@ const Pomodoro: React.FC = () => {
         ? userSettings.workDuration 
         : sessionType === "BREAK" 
         ? userSettings.shortBreakDuration 
-        : userSettings.longBreakDuration;
+        : userSettings.longBreakDuration;  
       setTimeLeft(duration * 60);
     }
   }, [userSettings, sessionType]);
@@ -84,7 +86,7 @@ const Pomodoro: React.FC = () => {
                 ? userSettings.shortBreakDuration 
                 : userSettings.longBreakDuration,
               startTime: startTimeRef.current.toISOString(),
-              endTime: new Date().toISOString(),
+              endTime: dayjs().toISOString(),
               completed: true,
               notes: sessionNotes,
               type: sessionType,
@@ -146,7 +148,7 @@ const Pomodoro: React.FC = () => {
   const handleStart = () => {
     setIsActive(true);
     if (!startTimeRef.current) {
-      startTimeRef.current = new Date();
+      startTimeRef.current = dayjs().toDate();
     }
   };
 
@@ -202,9 +204,7 @@ const Pomodoro: React.FC = () => {
   };
 
   const todaySessions = pomodoroSessions.filter((session: any) => {
-    const today = new Date();
-    const sessionDate = new Date(session.startTime);
-    return sessionDate.toDateString() === today.toDateString();
+    return dayjs().isSame(dayjs(session.startTime), 'day');
   });
 
   const todayWorkSessions = todaySessions.filter((s: any) => s.type === "WORK").length;
@@ -471,10 +471,7 @@ const Pomodoro: React.FC = () => {
                       {sessionTypeLabels[session.type as keyof typeof sessionTypeLabels]}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(session.startTime).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {dayjs(session.startTime).format('HH:mm')}
                     </p>
                   </div>
                 </div>

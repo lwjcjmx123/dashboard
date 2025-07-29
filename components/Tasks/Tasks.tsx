@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { GET_TASKS } from "@/lib/graphql/queries";
 import { CREATE_TASK, UPDATE_TASK, DELETE_TASK } from "@/lib/graphql/mutations";
 import { formatDate } from "@/utils/dateUtils";
+import dayjs from "dayjs";
 
 const Tasks: React.FC = () => {
   const { data, loading, error } = useQuery(GET_TASKS);
@@ -78,7 +79,7 @@ const Tasks: React.FC = () => {
             description: newTask.description,
             priority: newTask.priority,
             dueDate: newTask.dueDate
-              ? new Date(newTask.dueDate).toISOString()
+              ? dayjs(newTask.dueDate).toISOString()
               : null,
           },
         },
@@ -121,7 +122,7 @@ const Tasks: React.FC = () => {
             description: updatedTask.description,
             priority: updatedTask.priority,
             dueDate: updatedTask.dueDate
-              ? new Date(updatedTask.dueDate).toISOString()
+              ? dayjs(updatedTask.dueDate).toISOString()
               : null,
           },
         },
@@ -411,7 +412,7 @@ const Tasks: React.FC = () => {
                   type="datetime-local"
                   value={
                     editingTask.dueDate
-                      ? new Date(editingTask.dueDate).toISOString().slice(0, 16)
+                      ? dayjs(editingTask.dueDate).format('YYYY-MM-DDTHH:mm')
                       : ""
                   }
                   onChange={(e) =>

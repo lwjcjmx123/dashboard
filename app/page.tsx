@@ -6,7 +6,6 @@ import { GET_ME } from "@/lib/graphql/queries";
 import Sidebar from "@/components/Layout/Sidebar";
 import Header from "@/components/Layout/Header";
 import Dashboard from "@/components/Dashboard/Dashboard";
-import { AppProvider, useApp } from "./contexts/AppContext";
 import Calendar from "@/components/Calendar/Calendar";
 import Tasks from "@/components/Tasks/Tasks";
 import Finance from "@/components/Finance/Finance";
@@ -62,7 +61,11 @@ export default function Home() {
   const renderCurrentView = () => {
     switch (currentView) {
       case "dashboard":
-        return <Dashboard onNavigate={setCurrentView} />;
+        return (
+          <Dashboard
+            onNavigate={(view: string) => setCurrentView(view as ViewType)}
+          />
+        );
       case "calendar":
         return (
           <Calendar
@@ -83,7 +86,11 @@ export default function Home() {
       case "settings":
         return <Settings />;
       default:
-        return <Dashboard onNavigate={setCurrentView} />;
+        return (
+          <Dashboard
+            onNavigate={(view: string) => setCurrentView(view as ViewType)}
+          />
+        );
     }
   };
 

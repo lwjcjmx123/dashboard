@@ -3,6 +3,7 @@ import { BarChart3, TrendingUp, Clock, CheckSquare, DollarSign, FileText } from 
 import { useQuery } from '@apollo/client';
 import { GET_TASKS, GET_POMODORO_SESSIONS, GET_EXPENSES, GET_NOTES, GET_BILLS } from '@/lib/graphql/queries';
 import { isThisWeek, isToday, minutesToHours } from '@/utils/dateUtils';
+import dayjs from 'dayjs';
 
 const Analytics: React.FC = () => {
   const { data: tasksData } = useQuery(GET_TASKS);
@@ -65,24 +66,23 @@ const Analytics: React.FC = () => {
 
   // Weekly activity data (last 7 days)
   const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+    const date = dayjs().subtract(i, 'day');
     
     const dayTasks = tasks.filter((task: any) => 
-      task.updatedAt && new Date(task.updatedAt).toDateString() === date.toDateString()
+      task.updatedAt && dayjs(task.updatedAt).isSame(dayjs(date), 'day')
     );
     const dayPomodoros = pomodoroSessions.filter((session: any) => 
-      new Date(session.startTime).toDateString() === date.toDateString()
+      dayjs(session.startTime).isSame(dayjs(date), 'day')
     );
     const dayExpenses = expenses.filter((expense: any) => 
-      new Date(expense.date).toDateString() === date.toDateString()
+      dayjs(expense.date).isSame(dayjs(date), 'day')
     );
     const dayNotes = notes.filter((note: any) => 
-      new Date(note.createdAt).toDateString() === date.toDateString()
+      dayjs(note.createdAt).isSame(dayjs(date), 'day')
     );
 
     return {
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: dayjs(date).format('MMM D'),
       tasks: dayTasks.length,
       pomodoros: dayPomodoros.length,
       expenses: dayExpenses.length,
@@ -344,7 +344,7 @@ const Analytics: React.FC = () => {
               </span>
               <span className="text-sm font-medium text-red-600 dark:text-red-400">
                 {tasks.filter((task: any) => 
-                  task.dueDate && new Date(task.dueDate) < new Date() && !task.completed
+                  task.dueDate && dayjs(task.dueDate).isBefore(dayjs()) && !task.completed
                 ).length}
               </span>
             </div>
