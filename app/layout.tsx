@@ -3,7 +3,6 @@
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import ServiceWorkerRegistration from '@/components/PWA/ServiceWorkerRegistration'
-import PWAInstaller from '@/components/PWA/PWAInstaller'
 import './globals.css'
 
 export default function RootLayout({
@@ -46,7 +45,6 @@ export default function RootLayout({
         <LanguageProvider>
           <ThemeProvider>
             {children}
-            <PWAInstaller />
           </ThemeProvider>
         </LanguageProvider>
       </body>
