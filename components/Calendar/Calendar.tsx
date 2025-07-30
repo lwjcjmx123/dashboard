@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { useQuery } from '@apollo/client';
-import { GET_TASKS, GET_BILLS, GET_POMODORO_SESSIONS, GET_EVENTS } from '@/lib/graphql/queries';
+import { useClientTasks, useClientBills, useClientPomodoroSessions, useClientEvents } from '@/lib/client-data-hooks';
 import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays, formatTime } from '@/utils/dateUtils';
 import dayjs from 'dayjs';
 
@@ -16,15 +15,10 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
 
-  const { data: tasksData } = useQuery(GET_TASKS);
-  const { data: billsData } = useQuery(GET_BILLS);
-  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
-  const { data: eventsData } = useQuery(GET_EVENTS);
-
-  const tasks = tasksData?.tasks || [];
-  const bills = billsData?.bills || [];
-  const pomodoroSessions = pomodoroData?.pomodoroSessions || [];
-  const events = eventsData?.events || [];
+  const { tasks } = useClientTasks();
+  const { bills } = useClientBills();
+  const { sessions: pomodoroSessions } = useClientPomodoroSessions();
+  const { events } = useClientEvents();
 
   // Generate events from all data sources
   const generateEventsFromData = () => {

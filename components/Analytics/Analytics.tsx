@@ -1,22 +1,15 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Clock, CheckSquare, DollarSign, FileText } from 'lucide-react';
-import { useQuery } from '@apollo/client';
-import { GET_TASKS, GET_POMODORO_SESSIONS, GET_EXPENSES, GET_NOTES, GET_BILLS } from '@/lib/graphql/queries';
+import { useClientTasks, useClientPomodoroSessions, useClientExpenses, useClientNotes, useClientBills } from '@/lib/client-data-hooks';
 import { isThisWeek, isToday, minutesToHours } from '@/utils/dateUtils';
 import dayjs from 'dayjs';
 
 const Analytics: React.FC = () => {
-  const { data: tasksData } = useQuery(GET_TASKS);
-  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
-  const { data: expensesData } = useQuery(GET_EXPENSES);
-  const { data: notesData } = useQuery(GET_NOTES);
-  const { data: billsData } = useQuery(GET_BILLS);
-
-  const tasks = tasksData?.tasks || [];
-  const pomodoroSessions = pomodoroData?.pomodoroSessions || [];
-  const expenses = expensesData?.expenses || [];
-  const notes = notesData?.notes || [];
-  const bills = billsData?.bills || [];
+  const { tasks } = useClientTasks();
+  const { sessions: pomodoroSessions } = useClientPomodoroSessions();
+  const { expenses } = useClientExpenses();
+  const { notes } = useClientNotes();
+  const { bills } = useClientBills();
 
   // Calculate metrics
   const completedTasks = tasks.filter((task: any) => task.completed).length;

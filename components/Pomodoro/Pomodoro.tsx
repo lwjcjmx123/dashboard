@@ -1,25 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, RotateCcw, Settings, BarChart3, Clock } from "lucide-react";
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_POMODORO_SESSIONS, GET_TASKS, GET_USER_SETTINGS } from '@/lib/graphql/queries';
-import { CREATE_POMODORO_SESSION, UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations';
+import { useClientPomodoroSessions, useClientTasks, useClientUserSettings } from '@/lib/client-data-hooks';
 import { minutesToHours } from '@/utils/dateUtils';
 import dayjs from "dayjs";
 import { formatTime } from "../../utils/dateUtils";
 
 const Pomodoro: React.FC = () => {
-  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS);
-  const { data: tasksData } = useQuery(GET_TASKS);
-  const { data: settingsData } = useQuery(GET_USER_SETTINGS);
-  
-  const [createPomodoroSession] = useMutation(CREATE_POMODORO_SESSION, {
-    refetchQueries: [{ query: GET_POMODORO_SESSIONS }],
-  });
-  const [updateSettings] = useMutation(UPDATE_USER_SETTINGS);
-
-  const pomodoroSessions = pomodoroData?.pomodoroSessions || [];
-  const tasks = tasksData?.tasks || [];
-  const userSettings = settingsData?.userSettings;
+  const { sessions: pomodoroSessions, createSession } = useClientPomodoroSessions();
+  const { tasks } = useClientTasks();
+  const { settings: userSettings, updateSettings } = useClientUserSettings();
 
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes
@@ -77,21 +66,17 @@ const Pomodoro: React.FC = () => {
     // Save session
     if (startTimeRef.current && userSettings) {
       try {
-        await createPomodoroSession({
-          variables: {
-            input: {
-              duration: sessionType === "WORK" 
-                ? userSettings.workDuration 
-                : sessionType === "BREAK" 
-                ? userSettings.shortBreakDuration 
-                : userSettings.longBreakDuration,
-              startTime: startTimeRef.current.toISOString(),
-              endTime: dayjs().toISOString(),
-              completed: true,
-              notes: sessionNotes,
-              type: sessionType,
-            },
-          },
+        await createSession({
+          duration: sessionType === "WORK" 
+            ? userSettings.workDuration 
+            : sessionType === "BREAK" 
+            ? userSettings.shortBreakDuration 
+            : userSettings.longBreakDuration,
+          startTime: startTimeRef.current.toISOString(),
+          endTime: dayjs().toISOString(),
+          completed: true,
+          notes: sessionNotes,
+          type: sessionType,
         });
       } catch (error) {
         console.error('Error saving pomodoro session:', error);
@@ -118,7 +103,7 @@ const Pomodoro: React.FC = () => {
 
     setSessionNotes("");
     startTimeRef.current = null;
-  }, [sessionType, sessionCount, userSettings, selectedTaskId, sessionNotes, createPomodoroSession, playNotificationSound]);
+  }, [sessionType, sessionCount, userSettings, selectedTaskId, sessionNotes, createSession, playNotificationSound]);
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -626,11 +611,7 @@ const Pomodoro: React.FC = () => {
                   value={userSettings.workDuration}
                   onChange={(e) =>
                     updateSettings({
-                      variables: {
-                        input: {
-                          workDuration: parseInt(e.target.value),
-                        },
-                      },
+                      workDuration: parseInt(e.target.value),
                     })
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -646,11 +627,7 @@ const Pomodoro: React.FC = () => {
                   value={userSettings.shortBreakDuration}
                   onChange={(e) =>
                     updateSettings({
-                      variables: {
-                        input: {
-                          shortBreakDuration: parseInt(e.target.value),
-                        },
-                      },
+                      shortBreakDuration: parseInt(e.target.value),
                     })
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -666,11 +643,7 @@ const Pomodoro: React.FC = () => {
                   value={userSettings.longBreakDuration}
                   onChange={(e) =>
                     updateSettings({
-                      variables: {
-                        input: {
-                          longBreakDuration: parseInt(e.target.value),
-                        },
-                      },
+                      longBreakDuration: parseInt(e.target.value),
                     })
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -686,11 +659,7 @@ const Pomodoro: React.FC = () => {
                   value={userSettings.sessionsUntilLongBreak}
                   onChange={(e) =>
                     updateSettings({
-                      variables: {
-                        input: {
-                          sessionsUntilLongBreak: parseInt(e.target.value),
-                        },
-                      },
+                      sessionsUntilLongBreak: parseInt(e.target.value),
                     })
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"

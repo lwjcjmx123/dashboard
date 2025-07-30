@@ -1,8 +1,6 @@
 import React from 'react';
 import { Moon, Sun, Globe, Clock, DollarSign, Bell, Database, Shield } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_USER_SETTINGS } from '@/lib/graphql/queries';
-import { UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations';
+import { useClientUserSettings } from '@/lib/client-data-hooks';
 
 interface SelectSetting {
   label: string;
@@ -32,21 +30,12 @@ interface NumberSetting {
 type Setting = SelectSetting | ToggleSetting | NumberSetting;
 
 const Settings: React.FC = () => {
-  const { data, loading } = useQuery(GET_USER_SETTINGS);
-  const [updateSettings] = useMutation(UPDATE_USER_SETTINGS, {
-    refetchQueries: [{ query: GET_USER_SETTINGS }],
-  });
-
-  const settings = data?.userSettings;
+  const { settings, updateSettings, loading } = useClientUserSettings();
 
   const handleSettingChange = async (key: string, value: any) => {
     try {
       await updateSettings({
-        variables: {
-          input: {
-            [key]: value
-          }
-        }
+        [key]: value
       });
     } catch (error) {
       console.error('Error updating settings:', error);

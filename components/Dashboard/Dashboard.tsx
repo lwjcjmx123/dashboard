@@ -1,9 +1,8 @@
 'use client'
 
 import React from 'react'
-import { useQuery } from '@apollo/client'
 import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
-import { GET_TASKS, GET_BILLS, GET_NOTES, GET_POMODORO_SESSIONS } from '@/lib/graphql/queries'
+import { useClientTasks, useClientBills, useClientNotes, useClientPomodoroSessions } from '@/lib/client-data-hooks'
 import { isThisWeek, formatDate, formatTime } from '../../utils/dateUtils'
 import dayjs from 'dayjs'
 
@@ -12,15 +11,10 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { data: tasksData } = useQuery(GET_TASKS)
-  const { data: billsData } = useQuery(GET_BILLS)
-  const { data: notesData } = useQuery(GET_NOTES)
-  const { data: pomodoroData } = useQuery(GET_POMODORO_SESSIONS)
-
-  const tasks = tasksData?.tasks || []
-  const bills = billsData?.bills || []
-  const notes = notesData?.notes || []
-  const pomodoroSessions = pomodoroData?.pomodoroSessions || []
+  const { tasks } = useClientTasks()
+  const { bills } = useClientBills()
+  const { notes } = useClientNotes()
+  const { sessions: pomodoroSessions } = useClientPomodoroSessions()
 
   // Calculate today's data
   const todayTasks = tasks.filter((task: any) => 
