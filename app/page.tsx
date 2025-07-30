@@ -1,19 +1,11 @@
 'use client'
 
-import AppLayout from '@/components/Layout/AppLayout'
-import Dashboard from '@/components/Dashboard/Dashboard'
-import { useRouter } from 'next/navigation'
+import ClientRouter from '@/components/ClientRouter'
 
+/**
+ * 主页面组件
+ * 使用 ClientRouter 实现快速路由切换，避免卡顿
+ */
 export default function Home() {
-  const router = useRouter()
-
-  const handleNavigate = (view: string) => {
-    router.push(`/${view}`)
-  }
-
-  return (
-    <AppLayout>
-      <Dashboard onNavigate={handleNavigate} />
-    </AppLayout>
-  )
+  return <ClientRouter />
 }

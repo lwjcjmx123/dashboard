@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Web 应用配置
+  trailingSlash: false,
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client'],
   },
