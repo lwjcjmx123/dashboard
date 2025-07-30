@@ -9,7 +9,7 @@ import {
   Database,
   Shield,
 } from "lucide-react";
-import { useClientUserSettings } from "@/lib/client-data-hooks";
+import { useClientUserSettings, exportAllData, importAllData, clearAllData } from "@/lib/client-data-hooks";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -69,23 +69,55 @@ const Settings: React.FC = () => {
     setLanguage(newLanguage);
   };
 
-  const exportData = () => {
-    // This would export all user data
-    console.log("Export data functionality would be implemented here");
+  const handleExportData = async () => {
+    try {
+      const jsonData = await exportAllData();
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert(t('exportSuccess') || '数据导出成功！');
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(t('exportError') || '导出数据失败，请重试。');
+    }
   };
 
-  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // This would import user data
-    console.log("Import data functionality would be implemented here");
+    try {
+      const text = await file.text();
+      await importAllData(text);
+      alert(t('importSuccess') || '数据导入成功！页面将刷新以显示新数据。');
+      // 刷新页面以显示导入的数据
+      window.location.reload();
+    } catch (error) {
+      console.error('Import error:', error);
+      alert(t('importError') || '导入数据失败，请检查文件格式是否正确。');
+    }
+    
+    // 重置文件输入
+    event.target.value = '';
   };
 
-  const clearAllData = () => {
+  const handleClearAllData = async () => {
     if (window.confirm(t("clearAllDataConfirm"))) {
-      // This would clear all user data
-      console.log("Clear all data functionality would be implemented here");
+      try {
+        await clearAllData();
+        alert(t('clearDataSuccess') || '所有数据已清除！页面将刷新。');
+        // 刷新页面以显示清空后的状态
+        window.location.reload();
+      } catch (error) {
+        console.error('Clear data error:', error);
+        alert(t('clearDataError') || '清除数据失败，请重试。');
+      }
     }
   };
 
@@ -382,7 +414,7 @@ const Settings: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={exportData}
+                onClick={handleExportData}
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
               >
                 {t("export")}
@@ -402,7 +434,7 @@ const Settings: React.FC = () => {
                 <input
                   type="file"
                   accept=".json"
-                  onChange={importData}
+                  onChange={handleImportData}
                   className="hidden"
                   id="import-file"
                 />
@@ -425,7 +457,7 @@ const Settings: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={clearAllData}
+                onClick={handleClearAllData}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
               >
                 {t("clearAll")}

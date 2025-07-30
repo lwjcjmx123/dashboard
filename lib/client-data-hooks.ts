@@ -680,3 +680,268 @@ export const useClientUserSettings = () => {
     refetch: loadSettings
   }
 }
+
+// 数据导出功能 - 导出所有用户数据为JSON格式
+export const exportAllData = async (): Promise<string> => {
+  try {
+    const adapter = getDataAdapter()
+    
+    // 获取所有数据表的数据
+    const [tasks, notes, bills, expenses, events, pomodoroSessions, userSettings, notifications] = await Promise.all([
+      adapter.task.findMany(),
+      adapter.note.findMany(),
+      adapter.bill.findMany(),
+      adapter.expense.findMany(),
+      adapter.event.findMany(),
+      adapter.pomodoroSession.findMany(),
+      adapter.userSettings.findUnique({ where: { userId: 'demo-user-id' } }),
+      adapter.notification.findMany()
+    ])
+
+    // 构建导出数据结构
+    const exportData = {
+      version: '1.0.0',
+      exportDate: new Date().toISOString(),
+      data: {
+        tasks: tasks || [],
+        notes: notes || [],
+        bills: bills || [],
+        expenses: expenses || [],
+        events: events || [],
+        pomodoroSessions: pomodoroSessions || [],
+        userSettings: userSettings || null,
+        notifications: notifications || []
+      }
+    }
+
+    return JSON.stringify(exportData, null, 2)
+  } catch (error) {
+    console.error('Error exporting data:', error)
+    throw new Error('导出数据失败')
+  }
+}
+
+// 数据导入功能 - 从JSON数据导入所有数据
+export const importAllData = async (jsonData: string): Promise<void> => {
+  try {
+    const importData = JSON.parse(jsonData)
+    
+    // 验证数据格式
+    if (!importData.data || typeof importData.data !== 'object') {
+      throw new Error('无效的数据格式')
+    }
+
+    const adapter = getDataAdapter()
+    const { data } = importData
+
+    // 导入用户设置
+    if (data.userSettings) {
+      await adapter.userSettings.upsert({
+        where: { userId: 'demo-user-id' },
+        create: {
+          ...data.userSettings,
+          userId: 'demo-user-id',
+          updatedAt: new Date().toISOString()
+        },
+        update: {
+          ...data.userSettings,
+          userId: 'demo-user-id',
+          updatedAt: new Date().toISOString()
+        }
+      })
+    }
+
+    // 导入任务
+    if (data.tasks && Array.isArray(data.tasks)) {
+      for (const task of data.tasks) {
+        await adapter.task.create({
+          data: {
+            ...task,
+            id: task.id || 'task_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // 导入笔记
+    if (data.notes && Array.isArray(data.notes)) {
+      for (const note of data.notes) {
+        await adapter.note.create({
+          data: {
+            ...note,
+            id: note.id || 'note_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // 导入账单
+    if (data.bills && Array.isArray(data.bills)) {
+      for (const bill of data.bills) {
+        await adapter.bill.create({
+          data: {
+            ...bill,
+            id: bill.id || 'bill_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // 导入支出
+    if (data.expenses && Array.isArray(data.expenses)) {
+      for (const expense of data.expenses) {
+        await adapter.expense.create({
+          data: {
+            ...expense,
+            id: expense.id || 'expense_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // 导入事件
+    if (data.events && Array.isArray(data.events)) {
+      for (const event of data.events) {
+        await adapter.event.create({
+          data: {
+            ...event,
+            id: event.id || 'event_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // 导入番茄钟会话
+    if (data.pomodoroSessions && Array.isArray(data.pomodoroSessions)) {
+      for (const session of data.pomodoroSessions) {
+        await adapter.pomodoroSession.create({
+          data: {
+            ...session,
+            id: session.id || 'session_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id'
+          }
+        })
+      }
+    }
+
+    // 导入通知
+    if (data.notifications && Array.isArray(data.notifications)) {
+      for (const notification of data.notifications) {
+        await adapter.notification.create({
+          data: {
+            ...notification,
+            id: notification.id || 'notification_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+            userId: 'demo-user-id',
+            updatedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+  } catch (error) {
+    console.error('Error importing data:', error)
+    if (error instanceof SyntaxError) {
+      throw new Error('无效的JSON格式')
+    }
+    throw new Error('导入数据失败')
+  }
+}
+
+// 清除所有数据功能
+export const clearAllData = async (): Promise<void> => {
+  try {
+    const adapter = getDataAdapter()
+    
+    // 获取所有数据并删除
+    const [tasks, notes, bills, expenses, events, notifications] = await Promise.all([
+      adapter.task.findMany(),
+      adapter.note.findMany(),
+      adapter.bill.findMany(),
+      adapter.expense.findMany(),
+      adapter.event.findMany(),
+      adapter.notification.findMany()
+    ])
+
+    // 删除所有任务
+    for (const task of tasks || []) {
+      await adapter.task.delete({ where: { id: task.id } })
+    }
+
+    // 删除所有笔记
+    for (const note of notes || []) {
+      await adapter.note.delete({ where: { id: note.id } })
+    }
+
+    // 删除所有账单
+    for (const bill of bills || []) {
+      await adapter.bill.delete({ where: { id: bill.id } })
+    }
+
+    // 删除所有支出
+    for (const expense of expenses || []) {
+      await adapter.expense.delete({ where: { id: expense.id } })
+    }
+
+    // 删除所有事件
+    for (const event of events || []) {
+      await adapter.event.delete({ where: { id: event.id } })
+    }
+
+    // 删除所有通知
+    for (const notification of notifications || []) {
+      await adapter.notification.delete({ where: { id: notification.id } })
+    }
+
+    // 重置用户设置为默认值
+    await adapter.userSettings.upsert({
+      where: { userId: 'demo-user-id' },
+      create: {
+        userId: 'demo-user-id',
+        theme: 'light',
+        language: 'en',
+        timeFormat: '24',
+        currency: 'USD',
+        notifyTasks: true,
+        notifyBills: true,
+        notifyPomodoro: true,
+        notifyEvents: true,
+        workDuration: 25,
+        shortBreakDuration: 5,
+        longBreakDuration: 15,
+        sessionsUntilLongBreak: 4,
+        id: 'settings_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      update: {
+        theme: 'light',
+        language: 'en',
+        timeFormat: '24',
+        currency: 'USD',
+        notifyTasks: true,
+        notifyBills: true,
+        notifyPomodoro: true,
+        notifyEvents: true,
+        workDuration: 25,
+        shortBreakDuration: 5,
+        longBreakDuration: 15,
+        sessionsUntilLongBreak: 4,
+        updatedAt: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('Error clearing data:', error)
+    throw new Error('清除数据失败')
+  }
+}

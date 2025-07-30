@@ -222,7 +222,7 @@ const Pomodoro: React.FC = () => {
             {t('pomodoro')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Focus with the Pomodoro Technique
+            {t('focusWithPomodoroTechnique')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -231,7 +231,7 @@ const Pomodoro: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
           >
             <BarChart3 size={20} />
-            Stats
+            {t('stats')}
           </button>
           <button
             onClick={() => setShowSettings(true)}
@@ -303,7 +303,7 @@ const Pomodoro: React.FC = () => {
                       : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}
                 >
-                  Work
+                  {t('work')}
                 </button>
                 <button
                   onClick={() => switchSessionType("BREAK")}
@@ -313,7 +313,7 @@ const Pomodoro: React.FC = () => {
                       : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}
                 >
-                  Break
+                  {t('break')}
                 </button>
                 <button
                   onClick={() => switchSessionType("LONG_BREAK")}
@@ -323,7 +323,7 @@ const Pomodoro: React.FC = () => {
                       : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                   }`}
                 >
-                  Long
+                  {t('long')}
                 </button>
               </div>
 
@@ -334,7 +334,7 @@ const Pomodoro: React.FC = () => {
                 {formatTime(timeLeft)}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Session {sessionCount + 1} of {userSettings.sessionsUntilLongBreak}
+                {t('sessionOf')} {sessionCount + 1} {t('of')} {userSettings.sessionsUntilLongBreak}
               </p>
             </div>
 
@@ -370,7 +370,7 @@ const Pomodoro: React.FC = () => {
             onChange={(e) => setSelectedTaskId(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option key="" value="">No task selected</option>
+            <option key="" value="">{t('noTaskSelected')}</option>
             {tasks
               .filter((t: any) => !t.completed)
               .map((task: any) => (
@@ -389,7 +389,7 @@ const Pomodoro: React.FC = () => {
           <textarea
             value={sessionNotes}
             onChange={(e) => setSessionNotes(e.target.value)}
-            placeholder="What did you work on?"
+            placeholder={t('whatDidYouWorkOn')}
             className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             rows={4}
           />
@@ -399,7 +399,7 @@ const Pomodoro: React.FC = () => {
       {/* Today's Progress */}
       <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Today's Progress
+          {t('todaysProgress')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
@@ -407,7 +407,7 @@ const Pomodoro: React.FC = () => {
               {todayWorkSessions}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Work Sessions
+              {t('workSessions')}
             </div>
           </div>
           <div className="text-center">
@@ -415,7 +415,7 @@ const Pomodoro: React.FC = () => {
               {minutesToHours(todayTotalTime)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Time
+              {t('totalTime')}
             </div>
           </div>
           <div className="text-center">
@@ -423,7 +423,7 @@ const Pomodoro: React.FC = () => {
               {todaySessions.filter((s: any) => s.type === "BREAK").length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Breaks Taken
+              {t('breaksTaken')}
             </div>
           </div>
         </div>
@@ -432,7 +432,7 @@ const Pomodoro: React.FC = () => {
       {/* Recent Sessions */}
       <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Recent Sessions
+          {t('recentSessions')}
         </h3>
         <div className="space-y-3">
           {pomodoroSessions
@@ -472,7 +472,7 @@ const Pomodoro: React.FC = () => {
             ))}
           {pomodoroSessions.length === 0 && (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              No sessions completed yet
+              {t('noSessionsCompletedYet')}
             </p>
           )}
         </div>
@@ -484,7 +484,7 @@ const Pomodoro: React.FC = () => {
           <div className="w-full max-w-3xl rounded-xl p-6 bg-white dark:bg-gray-800">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Pomodoro Statistics
+                {t('pomodoroStatistics')}
               </h3>
               <button
                 onClick={() => setStatsVisible(false)}
@@ -518,7 +518,7 @@ const Pomodoro: React.FC = () => {
                       {todayWorkSessions}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       Work Sessions
+                       {t('workSessions')}
                      </p>
                   </div>
                   <div>
@@ -526,7 +526,7 @@ const Pomodoro: React.FC = () => {
                       {minutesToHours(todayTotalTime)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       Total Time
+                       {t('totalTime')}
                      </p>
                   </div>
                 </div>
@@ -534,7 +534,7 @@ const Pomodoro: React.FC = () => {
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                   All Time
+                   {t('allTime')}
                  </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -542,7 +542,7 @@ const Pomodoro: React.FC = () => {
                       {pomodoroSessions.filter((s: any) => s.type === "WORK").length}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Work Sessions
+                      {t('workSessions')}
                     </p>
                   </div>
                   <div>
@@ -552,7 +552,7 @@ const Pomodoro: React.FC = () => {
                       )}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Total Time
+                      {t('totalTime')}
                     </p>
                   </div>
                 </div>
@@ -560,7 +560,7 @@ const Pomodoro: React.FC = () => {
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                   Breaks
+                   {t('breaks')}
                  </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -568,7 +568,7 @@ const Pomodoro: React.FC = () => {
                       {pomodoroSessions.filter((s: any) => s.type === "BREAK").length}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       Short Breaks
+                       {t('shortBreaks')}
                      </p>
                   </div>
                   <div>
@@ -576,7 +576,7 @@ const Pomodoro: React.FC = () => {
                       {pomodoroSessions.filter((s: any) => s.type === "LONG_BREAK").length}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       Long Breaks
+                       {t('longBreaks')}
                      </p>
                   </div>
                 </div>
