@@ -2,9 +2,11 @@ import React from 'react';
 import { BarChart3, TrendingUp, Clock, CheckSquare, DollarSign, FileText } from 'lucide-react';
 import { useClientTasks, useClientPomodoroSessions, useClientExpenses, useClientNotes, useClientBills } from '@/lib/client-data-hooks';
 import { isThisWeek, isToday, minutesToHours } from '@/utils/dateUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import dayjs from 'dayjs';
 
 const Analytics: React.FC = () => {
+  const { t } = useLanguage();
   const { tasks } = useClientTasks();
   const { sessions: pomodoroSessions } = useClientPomodoroSessions();
   const { expenses } = useClientExpenses();
@@ -87,7 +89,7 @@ const Analytics: React.FC = () => {
 
   const stats = [
     {
-      label: 'Task Completion Rate',
+      label: t('taskCompletionRate'),
       value: `${taskCompletionRate.toFixed(1)}%`,
       change: todayTasksRate - taskCompletionRate,
       icon: CheckSquare,
@@ -95,7 +97,7 @@ const Analytics: React.FC = () => {
       bgColor: 'bg-green-50 dark:bg-green-900/20',
     },
     {
-      label: 'Weekly Focus Time',
+      label: t('weeklyFocusTime'),
       value: minutesToHours(weeklyPomodoroTime),
       change: weeklyPomodoros.length - 20, // Compared to target of 20 sessions
       icon: Clock,
@@ -103,7 +105,7 @@ const Analytics: React.FC = () => {
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
     },
     {
-      label: 'Weekly Expenses',
+      label: t('weeklyExpenses'),
       value: `$${weeklyExpenseTotal.toFixed(2)}`,
       change: null,
       icon: DollarSign,
@@ -111,7 +113,7 @@ const Analytics: React.FC = () => {
       bgColor: 'bg-red-50 dark:bg-red-900/20',
     },
     {
-      label: 'Notes Created',
+      label: t('analyticsNotesCreated'),
       value: weeklyNotes.length,
       change: null,
       icon: FileText,
@@ -126,15 +128,15 @@ const Analytics: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Analytics
+            {t('analyticsTitle')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Insights into your productivity and habits
+            {t('analyticsSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <BarChart3 size={16} />
-          <span>Last 7 days</span>
+          <span>{t('lastSevenDays')}</span>
         </div>
       </div>
 
@@ -181,7 +183,7 @@ const Analytics: React.FC = () => {
         {/* Weekly Activity Chart */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Weekly Activity
+            {t('weeklyActivity')}
           </h3>
           <div className="space-y-4">
             {weeklyActivity.map((day, index) => (
@@ -210,15 +212,15 @@ const Analytics: React.FC = () => {
             <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Tasks</span>
+                <span>{t('analyticsTasks')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span>Pomodoros</span>
+                <span>{t('analyticsPomodoros')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Notes</span>
+                <span>{t('analyticsNotes')}</span>
               </div>
             </div>
           </div>
@@ -227,7 +229,7 @@ const Analytics: React.FC = () => {
         {/* Task Priority Distribution */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Task Priority Distribution
+            {t('taskPriorityDistribution')}
           </h3>
           <div className="space-y-4">
             {Object.entries(priorityDistribution).map(([priority, count]) => {
@@ -239,10 +241,10 @@ const Analytics: React.FC = () => {
                 'NOT_URGENT_NOT_IMPORTANT': 'bg-gray-500',
               };
               const labels = {
-                'URGENT_IMPORTANT': 'Urgent & Important',
-                'URGENT_NOT_IMPORTANT': 'Urgent',
-                'NOT_URGENT_IMPORTANT': 'Important',
-                'NOT_URGENT_NOT_IMPORTANT': 'Low Priority',
+                'URGENT_IMPORTANT': t('urgentAndImportant'),
+                'URGENT_NOT_IMPORTANT': t('urgent'),
+                'NOT_URGENT_IMPORTANT': t('important'),
+                'NOT_URGENT_NOT_IMPORTANT': t('lowPriority'),
               };
               
               return (
@@ -270,12 +272,12 @@ const Analytics: React.FC = () => {
         {/* Top Expense Categories */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Top Expense Categories
+            {t('topExpenseCategories')}
           </h3>
           <div className="space-y-3">
             {topExpenseCategories.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No expenses recorded yet
+                {t('analyticsNoExpensesRecordedYet')}
               </p>
             ) : (
               topExpenseCategories.map(([category, amount]) => {
@@ -307,12 +309,12 @@ const Analytics: React.FC = () => {
         {/* Productivity Insights */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Productivity Insights
+            {t('productivityInsights')}
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Average session length
+                {t('averageSessionLength')}
               </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {pomodoroSessions.length > 0 
@@ -324,16 +326,16 @@ const Analytics: React.FC = () => {
             
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Most productive day
+                {t('mostProductiveDay')}
               </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
-                Monday
+                {t('monday')}
               </span>
             </div>
             
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Overdue tasks
+                {t('overdueTasks')}
               </span>
               <span className="text-sm font-medium text-red-600 dark:text-red-400">
                 {tasks.filter((task: any) => 
@@ -344,7 +346,7 @@ const Analytics: React.FC = () => {
             
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Upcoming bills
+                {t('analyticsUpcomingBills')}
               </span>
               <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
                 ${unpaidBillsTotal.toFixed(2)}

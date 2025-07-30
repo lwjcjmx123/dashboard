@@ -16,6 +16,9 @@ import {
 import { useMutation } from '@apollo/client'
 import { UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations'
 import { GET_ME } from '@/lib/graphql/queries'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
+import { TranslationKey } from '@/lib/i18n'
 
 type ViewType = 'dashboard' | 'calendar' | 'tasks' | 'finance' | 'notes' | 'pomodoro' | 'analytics' | 'settings'
 
@@ -24,48 +27,37 @@ interface SidebarProps {
   onViewChange: (view: ViewType) => void
 }
 
-const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'calendar', label: 'Calendar', icon: Calendar },
-  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-  { id: 'finance', label: 'Finance', icon: DollarSign },
-  { id: 'notes', label: 'Notes', icon: FileText },
-  { id: 'pomodoro', label: 'Pomodoro', icon: Timer },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+const getNavigationItems = (t: (key: TranslationKey) => string) => [
+  { id: 'dashboard', label: t('dashboard'), icon: Home },
+  { id: 'calendar', label: t('calendar'), icon: Calendar },
+  { id: 'tasks', label: t('tasks'), icon: CheckSquare },
+  { id: 'finance', label: t('finance'), icon: DollarSign },
+  { id: 'notes', label: t('notes'), icon: FileText },
+  { id: 'pomodoro', label: t('pomodoro'), icon: Timer },
+  { id: 'analytics', label: t('analytics'), icon: BarChart3 },
+  { id: 'settings', label: t('settings'), icon: Settings },
 ]
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
-  const [updateSettings] = useMutation(UPDATE_USER_SETTINGS, {
-    refetchQueries: [{ query: GET_ME }],
-  })
+  const { t } = useLanguage()
+  const { theme, setTheme } = useTheme()
+  
+  const navigationItems = getNavigationItems(t)
 
-  const toggleTheme = async () => {
-    const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark'
-    
-    try {
-      await updateSettings({
-        variables: {
-          input: { theme: newTheme }
-        }
-      })
-      
-      document.documentElement.classList.toggle('dark', newTheme === 'dark')
-    } catch (error) {
-      console.error('Failed to update theme:', error)
-    }
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
   }
 
-  const isDark = document.documentElement.classList.contains('dark')
+  const isDark = theme === 'dark'
 
   return (
     <div className={`h-full flex flex-col ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} border-r border-gray-200 dark:border-gray-700 transition-colors duration-200`}>
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
           PMS
         </h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Personal Management System
+          {t('personalManagementSystem')}
         </p>
       </div>
       
@@ -80,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
               onClick={() => onViewChange(item.id as ViewType)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
@@ -98,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
         >
           {isDark ? <Sun size={20} /> : <Moon size={20} />}
           <span className="font-medium">
-            {isDark ? 'Light Mode' : 'Dark Mode'}
+            {isDark ? t('lightMode') : t('darkMode')}
           </span>
         </button>
       </div>

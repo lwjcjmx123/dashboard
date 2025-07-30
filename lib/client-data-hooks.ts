@@ -481,10 +481,41 @@ export const useClientUserSettings = () => {
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
+      console.log('Loading user settings...')
       const adapter = getDataAdapter()
-      const result = await adapter.userSettings.findUnique({
+      console.log('Data adapter:', adapter.constructor.name)
+      let result = await adapter.userSettings.findUnique({
         where: { userId: 'demo-user-id' }
       })
+      console.log('Settings result:', result)
+      
+      // If no settings found, create default settings
+      if (!result) {
+        console.log('No settings found, creating default settings...')
+        const defaultSettings = {
+          userId: 'demo-user-id',
+          theme: 'light',
+          colorScheme: 'blue',
+          language: 'en',
+          timeFormat: '24',
+          currency: 'CNY',
+          notifyTasks: true,
+          notifyBills: true,
+          notifyPomodoro: true,
+          notifyEvents: true,
+          workDuration: 25,
+          shortBreakDuration: 5,
+          longBreakDuration: 15,
+          sessionsUntilLongBreak: 4
+        }
+        result = await adapter.userSettings.upsert({
+          where: { userId: 'demo-user-id' },
+          update: defaultSettings,
+          create: defaultSettings
+        })
+        console.log('Created default settings:', result)
+      }
+      
       setSettings(result)
       setError(null)
     } catch (err) {

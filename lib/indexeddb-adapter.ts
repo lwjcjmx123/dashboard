@@ -73,8 +73,23 @@ class IndexedDBAdapter {
   }
 
   // Generic CRUD operations
-  async findUnique<T>(storeName: string, where: { id: string }): Promise<T | null> {
+  async findUnique<T>(storeName: string, where: any): Promise<T | null> {
     const store = await this.getStore(storeName);
+    
+    // Special handling for userSettings which queries by userId
+    if (storeName === 'userSettings' && where.userId) {
+      return new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const results = request.result || [];
+          const found = results.find(item => item.userId === where.userId);
+          resolve(found || null);
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }
+    
+    // Default behavior for id-based queries
     return new Promise((resolve, reject) => {
       const request = store.get(where.id);
       request.onsuccess = () => resolve(request.result || null);
@@ -174,20 +189,28 @@ class IndexedDBAdapter {
   }
 
   async upsert<T>(storeName: string, options: {
-    where: { id: string };
+    where: any;
     create: any;
     update: any;
   }): Promise<T> {
     try {
       const existing = await this.findUnique(storeName, options.where);
       if (existing) {
+        // For userSettings, use the existing id for update
+        const whereClause = storeName === 'userSettings' && options.where.userId 
+          ? { id: (existing as any).id }
+          : options.where;
         return await this.update(storeName, {
-          where: options.where,
+          where: whereClause,
           data: options.update,
         });
       } else {
+        // For userSettings, generate an id if not provided
+        const createData = storeName === 'userSettings' && options.where.userId
+          ? { ...options.create, id: this.generateId() }
+          : { ...options.create, id: options.where.id || this.generateId() };
         return await this.create(storeName, {
-          data: { ...options.create, id: options.where.id },
+          data: createData,
         });
       }
     } catch (error) {

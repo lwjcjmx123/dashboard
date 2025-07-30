@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, RotateCcw, Settings, BarChart3, Clock } from "lucide-react";
 import { useClientPomodoroSessions, useClientTasks, useClientUserSettings } from '@/lib/client-data-hooks';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { minutesToHours } from '@/utils/dateUtils';
 import dayjs from "dayjs";
 import { formatTime } from "../../utils/dateUtils";
@@ -9,6 +10,7 @@ const Pomodoro: React.FC = () => {
   const { sessions: pomodoroSessions, createSession } = useClientPomodoroSessions();
   const { tasks } = useClientTasks();
   const { settings: userSettings, updateSettings } = useClientUserSettings();
+  const { t } = useLanguage();
 
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes
@@ -202,13 +204,13 @@ const Pomodoro: React.FC = () => {
   };
 
   const sessionTypeLabels = {
-    WORK: "Work Session",
-    BREAK: "Short Break",
-    LONG_BREAK: "Long Break",
+    WORK: t('workSession'),
+    BREAK: t('shortBreak'),
+    LONG_BREAK: t('longBreak'),
   };
 
   if (!userSettings) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('loading')}</div>;
   }
 
   return (
@@ -217,7 +219,7 @@ const Pomodoro: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Pomodoro Timer
+            {t('pomodoro')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Focus with the Pomodoro Technique
@@ -236,7 +238,7 @@ const Pomodoro: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
           >
             <Settings size={20} />
-            Settings
+            {t('settings')}
           </button>
         </div>
       </div>
@@ -361,12 +363,12 @@ const Pomodoro: React.FC = () => {
         {/* Task Selection */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Link to Task
+            {t('selectTask')}
           </h3>
           <select
             value={selectedTaskId}
             onChange={(e) => setSelectedTaskId(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">No task selected</option>
             {tasks
@@ -382,13 +384,13 @@ const Pomodoro: React.FC = () => {
         {/* Session Notes */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Session Notes
+            {t('sessionNotes')}
           </h3>
           <textarea
             value={sessionNotes}
             onChange={(e) => setSessionNotes(e.target.value)}
             placeholder="What did you work on?"
-            className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             rows={4}
           />
         </div>
@@ -508,7 +510,7 @@ const Pomodoro: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  Today
+                  {t('today')}
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -516,24 +518,24 @@ const Pomodoro: React.FC = () => {
                       {todayWorkSessions}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Work Sessions
-                    </p>
+                       Work Sessions
+                     </p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                       {minutesToHours(todayTotalTime)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Total Time
-                    </p>
+                       Total Time
+                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  All Time
-                </h4>
+                   All Time
+                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-2xl font-bold text-red-600 dark:text-red-400">
@@ -558,24 +560,24 @@ const Pomodoro: React.FC = () => {
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  Breaks
-                </h4>
+                   Breaks
+                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                       {pomodoroSessions.filter((s: any) => s.type === "BREAK").length}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Short Breaks
-                    </p>
+                       Short Breaks
+                     </p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                       {pomodoroSessions.filter((s: any) => s.type === "LONG_BREAK").length}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Long Breaks
-                    </p>
+                       Long Breaks
+                     </p>
                   </div>
                 </div>
               </div>
@@ -586,7 +588,7 @@ const Pomodoro: React.FC = () => {
                 onClick={() => setStatsVisible(false)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>
@@ -598,13 +600,13 @@ const Pomodoro: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Pomodoro Settings
+              {t('pomodoroSettings')}
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Work Duration (minutes)
+                  {t('workDuration')} (minutes)
                 </label>
                 <input
                   type="number"
@@ -620,7 +622,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Short Break Duration (minutes)
+                  {t('shortBreakDuration')} (minutes)
                 </label>
                 <input
                   type="number"
@@ -636,7 +638,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Long Break Duration (minutes)
+                  {t('longBreakDuration')} (minutes)
                 </label>
                 <input
                   type="number"
@@ -652,7 +654,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Sessions Until Long Break
+                  {t('sessionsUntilLongBreak')}
                 </label>
                 <input
                   type="number"
@@ -672,7 +674,7 @@ const Pomodoro: React.FC = () => {
                 onClick={() => setShowSettings(false)}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>

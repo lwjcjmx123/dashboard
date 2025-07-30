@@ -1,20 +1,31 @@
-import React from 'react';
-import { Moon, Sun, Globe, Clock, DollarSign, Bell, Database, Shield } from 'lucide-react';
-import { useClientUserSettings } from '@/lib/client-data-hooks';
+import React from "react";
+import {
+  Moon,
+  Sun,
+  Globe,
+  Clock,
+  DollarSign,
+  Bell,
+  Database,
+  Shield,
+} from "lucide-react";
+import { useClientUserSettings } from "@/lib/client-data-hooks";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SelectSetting {
   label: string;
   description: string;
-  type: 'select';
+  type: "select";
   value: string;
-  options: { value: string; label: string; }[];
+  options: { value: string; label: string }[];
   onChange: (value: string) => void;
 }
 
 interface ToggleSetting {
   label: string;
   description: string;
-  type: 'toggle';
+  type: "toggle";
   value: boolean;
   onChange: (value: boolean) => void;
 }
@@ -22,7 +33,7 @@ interface ToggleSetting {
 interface NumberSetting {
   label: string;
   description: string;
-  type: 'number';
+  type: "number";
   value: number;
   onChange: (value: number) => void;
 }
@@ -31,39 +42,55 @@ type Setting = SelectSetting | ToggleSetting | NumberSetting;
 
 const Settings: React.FC = () => {
   const { settings, updateSettings, loading } = useClientUserSettings();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, colorScheme, setTheme, setColorScheme } = useTheme();
 
   const handleSettingChange = async (key: string, value: any) => {
     try {
       await updateSettings({
-        [key]: value
+        [key]: value,
       });
     } catch (error) {
-      console.error('Error updating settings:', error);
+      console.error("Error updating settings:", error);
     }
+  };
+
+  const handleThemeChange = (newTheme: "light" | "dark") => {
+    setTheme(newTheme);
+  };
+
+  const handleColorSchemeChange = (
+    newScheme: "blue" | "green" | "purple" | "red"
+  ) => {
+    setColorScheme(newScheme);
+  };
+
+  const handleLanguageChange = (newLanguage: "zh" | "en") => {
+    setLanguage(newLanguage);
   };
 
   const exportData = () => {
     // This would export all user data
-    console.log('Export data functionality would be implemented here');
+    console.log("Export data functionality would be implemented here");
   };
 
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     // This would import user data
-    console.log('Import data functionality would be implemented here');
+    console.log("Import data functionality would be implemented here");
   };
 
   const clearAllData = () => {
-    if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+    if (window.confirm(t("clearAllDataConfirm"))) {
       // This would clear all user data
-      console.log('Clear all data functionality would be implemented here');
+      console.log("Clear all data functionality would be implemented here");
     }
   };
 
   if (loading || !settings) {
-    return <div className="p-6">Loading settings...</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
 
   const settingSections: {
@@ -72,151 +99,149 @@ const Settings: React.FC = () => {
     settings: Setting[];
   }[] = [
     {
-      title: 'Appearance',
-      icon: settings.theme === 'dark' ? Sun : Moon,
+      title: t("appearance"),
+      icon: theme === "dark" ? Sun : Moon,
       settings: [
         {
-          label: 'Theme',
-          description: 'Choose your preferred color scheme',
-          type: 'select',
-          value: settings.theme,
+          label: t("colorScheme"),
+          description: t("colorSchemeDescription"),
+          type: "select",
+          value: colorScheme,
           options: [
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
+            { value: "blue", label: t("blue") },
+            { value: "green", label: t("green") },
+            { value: "purple", label: t("purple") },
+            { value: "red", label: t("red") },
           ],
-          onChange: (value: string) => handleSettingChange('theme', value),
-        },
-        {
-          label: 'Color Scheme',
-          description: 'Select your preferred accent color',
-          type: 'select',
-          value: settings.colorScheme,
-          options: [
-            { value: 'blue', label: 'Blue' },
-            { value: 'green', label: 'Green' },
-            { value: 'purple', label: 'Purple' },
-            { value: 'red', label: 'Red' },
-          ],
-          onChange: (value: string) => handleSettingChange('colorScheme', value),
+          onChange: (value: string) =>
+            handleColorSchemeChange(
+              value as "blue" | "green" | "purple" | "red"
+            ),
         },
       ],
     },
     {
-      title: 'Regional',
+      title: t("regional"),
       icon: Globe,
       settings: [
         {
-          label: 'Language',
-          description: 'Select your preferred language',
-          type: 'select',
-          value: settings.language,
+          label: t("language"),
+          description: t("languageDescription"),
+          type: "select",
+          value: language,
           options: [
-            { value: 'en', label: 'English' },
-            { value: 'es', label: 'Spanish' },
-            { value: 'fr', label: 'French' },
-            { value: 'de', label: 'German' },
+            { value: "zh", label: t("chinese") },
+            { value: "en", label: t("english") },
           ],
-          onChange: (value: string) => handleSettingChange('language', value),
+          onChange: (value: string) =>
+            handleLanguageChange(value as "zh" | "en"),
         },
         {
-          label: 'Time Format',
-          description: 'Choose 12-hour or 24-hour time format',
-          type: 'select',
+          label: t("timeFormat"),
+          description: t("timeFormatDescription"),
+          type: "select",
           value: settings.timeFormat,
           options: [
-            { value: '12', label: '12-hour (AM/PM)' },
-            { value: '24', label: '24-hour' },
+            { value: "12", label: t("12hour") },
+            { value: "24", label: t("24hour") },
           ],
-          onChange: (value: string) => handleSettingChange('timeFormat', value),
+          onChange: (value: string) => handleSettingChange("timeFormat", value),
         },
       ],
     },
     {
-      title: 'Currency',
+      title: t("currency"),
       icon: DollarSign,
       settings: [
         {
-          label: 'Default Currency',
-          description: 'Set your preferred currency for financial tracking',
-          type: 'select',
+          label: t("defaultCurrency"),
+          description: t("defaultCurrencyDescription"),
+          type: "select",
           value: settings.currency,
           options: [
-            { value: 'USD', label: 'US Dollar ($)' },
-            { value: 'EUR', label: 'Euro (€)' },
-            { value: 'GBP', label: 'British Pound (£)' },
-            { value: 'JPY', label: 'Japanese Yen (¥)' },
-            { value: 'CAD', label: 'Canadian Dollar (C$)' },
-            { value: 'AUD', label: 'Australian Dollar (A$)' },
+            { value: "CNY", label: "Chinese Yuan (¥)" },
+            { value: "USD", label: "US Dollar ($)" },
+            { value: "EUR", label: "Euro (€)" },
+            { value: "GBP", label: "British Pound (£)" },
+            { value: "JPY", label: "Japanese Yen (¥)" },
           ],
-          onChange: (value: string) => handleSettingChange('currency', value),
+          onChange: (value: string) => handleSettingChange("currency", value),
         },
       ],
     },
     {
-      title: 'Notifications',
+      title: t("notifications"),
       icon: Bell,
       settings: [
         {
-          label: 'Task Notifications',
-          description: 'Get notified about task deadlines and reminders',
-          type: 'toggle',
+          label: t("taskNotifications"),
+          description: t("taskNotificationsDescription"),
+          type: "toggle",
           value: settings.notifyTasks,
-          onChange: (value: boolean) => handleSettingChange('notifyTasks', value),
+          onChange: (value: boolean) =>
+            handleSettingChange("notifyTasks", value),
         },
         {
-          label: 'Bill Notifications',
-          description: 'Receive alerts for upcoming bill payments',
-          type: 'toggle',
+          label: t("billNotifications"),
+          description: t("billNotificationsDescription"),
+          type: "toggle",
           value: settings.notifyBills,
-          onChange: (value: boolean) => handleSettingChange('notifyBills', value),
+          onChange: (value: boolean) =>
+            handleSettingChange("notifyBills", value),
         },
         {
-          label: 'Pomodoro Notifications',
-          description: 'Get notified when Pomodoro sessions start and end',
-          type: 'toggle',
+          label: t("pomodoroNotifications"),
+          description: t("pomodoroNotificationsDescription"),
+          type: "toggle",
           value: settings.notifyPomodoro,
-          onChange: (value: boolean) => handleSettingChange('notifyPomodoro', value),
+          onChange: (value: boolean) =>
+            handleSettingChange("notifyPomodoro", value),
         },
         {
-          label: 'Event Notifications',
-          description: 'Receive reminders for calendar events',
-          type: 'toggle',
+          label: t("eventNotifications"),
+          description: t("eventNotificationsDescription"),
+          type: "toggle",
           value: settings.notifyEvents,
-          onChange: (value: boolean) => handleSettingChange('notifyEvents', value),
+          onChange: (value: boolean) =>
+            handleSettingChange("notifyEvents", value),
         },
       ],
     },
     {
-      title: 'Pomodoro Settings',
+      title: t("pomodoroSettings"),
       icon: Clock,
       settings: [
         {
-          label: 'Work Duration',
-          description: 'Duration of work sessions (minutes)',
-          type: 'number',
+          label: t("workDuration"),
+          description: t("workDurationDescription"),
+          type: "number",
           value: settings.workDuration,
-          onChange: (value: number) => handleSettingChange('workDuration', value),
+          onChange: (value: number) =>
+            handleSettingChange("workDuration", value),
         },
         {
-          label: 'Short Break Duration',
-          description: 'Duration of short breaks (minutes)',
-          type: 'number',
+          label: t("shortBreakDuration"),
+          description: t("shortBreakDurationDescription"),
+          type: "number",
           value: settings.shortBreakDuration,
-          onChange: (value: number) => handleSettingChange('shortBreakDuration', value),
+          onChange: (value: number) =>
+            handleSettingChange("shortBreakDuration", value),
         },
         {
-          label: 'Long Break Duration',
-          description: 'Duration of long breaks (minutes)',
-          type: 'number',
+          label: t("longBreakDuration"),
+          description: t("longBreakDurationDescription"),
+          type: "number",
           value: settings.longBreakDuration,
-          onChange: (value: number) => handleSettingChange('longBreakDuration', value),
+          onChange: (value: number) =>
+            handleSettingChange("longBreakDuration", value),
         },
         {
-          label: 'Sessions Until Long Break',
-          description: 'Number of work sessions before a long break',
-          type: 'number',
+          label: t("sessionsUntilLongBreak"),
+          description: t("sessionsUntilLongBreakDescription"),
+          type: "number",
           value: settings.sessionsUntilLongBreak,
-          onChange: (value: number) => handleSettingChange('sessionsUntilLongBreak', value),
+          onChange: (value: number) =>
+            handleSettingChange("sessionsUntilLongBreak", value),
         },
       ],
     },
@@ -228,10 +253,10 @@ const Settings: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Settings
+            {t("settingsTitle")}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Customize your Personal Management System
+            {t("settingsSubtitle")}
           </p>
         </div>
       </div>
@@ -247,16 +272,22 @@ const Settings: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                  <Icon className="text-blue-600 dark:text-blue-400" size={20} />
+                  <Icon
+                    className="text-primary-600 dark:text-primary-400"
+                    size={20}
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {section.title}
                 </h3>
               </div>
-              
+
               <div className="space-y-6">
                 {section.settings.map((setting, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-gray-900 dark:text-white">
                         {setting.label}
@@ -265,13 +296,17 @@ const Settings: React.FC = () => {
                         {setting.description}
                       </p>
                     </div>
-                    
+
                     <div className="ml-4">
-                      {setting.type === 'select' && (
+                      {setting.type === "select" && (
                         <select
                           value={setting.value}
-                          onChange={(e) => (setting.onChange as (value: string) => void)(e.target.value)}
-                          className="px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={(e) =>
+                            (setting.onChange as (value: string) => void)(
+                              e.target.value
+                            )
+                          }
+                          className="px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           {(setting as SelectSetting).options?.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -280,30 +315,38 @@ const Settings: React.FC = () => {
                           ))}
                         </select>
                       )}
-                      
-                      {setting.type === 'toggle' && (
+
+                      {setting.type === "toggle" && (
                         <button
-                          onClick={() => (setting as ToggleSetting).onChange(!(setting as ToggleSetting).value)}
+                          onClick={() =>
+                            (setting as ToggleSetting).onChange(
+                              !(setting as ToggleSetting).value
+                            )
+                          }
                           className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 ${
                             setting.value
-                              ? 'bg-blue-600'
-                              : 'bg-gray-200 dark:bg-gray-600'
+                              ? "bg-primary-600"
+                              : "bg-gray-200 dark:bg-gray-600"
                           }`}
                         >
                           <span
                             className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                              setting.value ? 'translate-x-6' : 'translate-x-1'
+                              setting.value ? "translate-x-6" : "translate-x-1"
                             } mt-1`}
                           />
                         </button>
                       )}
-                      
-                      {setting.type === 'number' && (
+
+                      {setting.type === "number" && (
                         <input
                           type="number"
                           value={setting.value}
-                          onChange={(e) => (setting as NumberSetting).onChange(parseInt(e.target.value))}
-                          className="w-20 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={(e) =>
+                            (setting as NumberSetting).onChange(
+                              parseInt(e.target.value)
+                            )
+                          }
+                          className="w-20 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       )}
                     </div>
@@ -318,38 +361,41 @@ const Settings: React.FC = () => {
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-              <Database className="text-blue-600 dark:text-blue-400" size={20} />
+              <Database
+                className="text-primary-600 dark:text-primary-400"
+                size={20}
+              />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Data Management
+              {t("dataManagement")}
             </h3>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  Export Data
+                  {t("exportData")}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Download a backup of all your data
+                  {t("exportDataDescription")}
                 </p>
               </div>
               <button
                 onClick={exportData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
               >
-                Export
+                {t("export")}
               </button>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  Import Data
+                  {t("importData")}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Restore data from a backup file
+                  {t("importDataDescription")}
                 </p>
               </div>
               <div>
@@ -362,27 +408,27 @@ const Settings: React.FC = () => {
                 />
                 <label
                   htmlFor="import-file"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 cursor-pointer"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 cursor-pointer"
                 >
-                  Import
+                  {t("import")}
                 </label>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  Clear All Data
+                  {t("clearAllData")}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Permanently delete all your data
+                  {t("clearAllDataDescription")}
                 </p>
               </div>
               <button
                 onClick={clearAllData}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
               >
-                Clear All
+                {t("clearAll")}
               </button>
             </div>
           </div>
@@ -392,32 +438,36 @@ const Settings: React.FC = () => {
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-              <Shield className="text-blue-600 dark:text-blue-400" size={20} />
+              <Shield
+                className="text-primary-600 dark:text-primary-400"
+                size={20}
+              />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Privacy & Security
+              {t("privacySecurity")}
             </h3>
           </div>
-          
+
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2 mb-2">
-                <Shield className="text-green-600 dark:text-green-400" size={16} />
+                <Shield
+                  className="text-green-600 dark:text-green-400"
+                  size={16}
+                />
                 <span className="text-sm font-medium text-green-800 dark:text-green-400">
-                  Database Storage
+                  {t("databaseStorage")}
                 </span>
               </div>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Your data is stored in a local SQLite database with GraphQL API access. 
-                All data remains on your server and you have complete control over your privacy and data security.
+                {t("databaseStorageDescription")}
               </p>
             </div>
-            
+
             <div className="text-sm text-gray-600 dark:text-gray-400">
               <p>
-                <strong>Data Privacy:</strong> All your personal information, tasks, notes, and financial data 
-                are stored in your local database. The application provides a secure GraphQL API for data access 
-                and does not transmit any personal data to external servers.
+                <strong>{t("dataPrivacy")}:</strong>{" "}
+                {t("dataPrivacyDescription")}
               </p>
             </div>
           </div>

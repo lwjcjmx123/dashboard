@@ -2,8 +2,9 @@
 
 import React from 'react'
 import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
-import { useClientTasks, useClientBills, useClientNotes, useClientPomodoroSessions } from '@/lib/client-data-hooks'
+import { useClientTasks, useClientBills, useClientNotes, useClientPomodoroSessions, useClientUserSettings } from '@/lib/client-data-hooks'
 import { isThisWeek, formatDate, formatTime } from '../../utils/dateUtils'
+import { useLanguage } from '@/contexts/LanguageContext'
 import dayjs from 'dayjs'
 
 interface DashboardProps {
@@ -11,10 +12,26 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const { t } = useLanguage()
   const { tasks } = useClientTasks()
   const { bills } = useClientBills()
   const { notes } = useClientNotes()
   const { sessions: pomodoroSessions } = useClientPomodoroSessions()
+  const { settings } = useClientUserSettings()
+
+  // Currency symbol mapping
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: { [key: string]: string } = {
+      'CNY': '¥',
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥'
+    };
+    return symbols[currency] || '$';
+  };
+
+  const currencySymbol = settings ? getCurrencySymbol(settings.currency) : '$';
 
   // Calculate today's data
   const todayTasks = tasks.filter((task: any) => 
@@ -36,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const stats = [
     {
-      label: 'Tasks Completed',
+      label: t('tasksCompleted'),
       value: `${completedTasks}/${totalTasks}`,
       percentage: taskCompletionRate,
       icon: CheckSquare,
@@ -45,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       onClick: () => onNavigate('tasks'),
     },
     {
-      label: 'Upcoming Bills',
+      label: t('upcomingBills'),
       value: upcomingBills.length,
       percentage: null,
       icon: DollarSign,
@@ -54,16 +71,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       onClick: () => onNavigate('finance'),
     },
     {
-      label: 'Notes Created',
+      label: t('notesCreated'),
       value: notes.length,
       percentage: null,
       icon: FileText,
-      color: 'text-blue-600 dark:text-blue-400',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      color: 'text-primary-600 dark:text-primary-400',
+      bgColor: 'bg-primary-50 dark:bg-primary-900/20',
       onClick: () => onNavigate('notes'),
     },
     {
-      label: 'Pomodoro Sessions',
+      label: t('pomodoroSessions'),
       value: weeklyPomodoroSessions,
       percentage: null,
       icon: Timer,
@@ -78,10 +95,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Good morning! 👋
+            {t('goodMorning')} 👋
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Here's what's happening today
+            {t('happeningToday')}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -130,14 +147,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Today's Tasks
+              {t('todayTasks')}
             </h3>
-            <CheckSquare className="text-blue-500" size={20} />
+            <CheckSquare className="text-primary-500" size={20} />
           </div>
           <div className="space-y-3">
             {todayTasks.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No tasks scheduled for today
+                {t('noTasksToday')}
               </p>
             ) : (
               todayTasks.slice(0, 5).map((task: any) => (
@@ -148,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <input
                     type="checkbox"
                     checked={task.completed}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                     readOnly
                   />
                   <div className="flex-1">
@@ -161,14 +178,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </p>
                     {task.dueDate && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Due: {formatTime(new Date(task.dueDate))}
+                        {t('dueDate')}: {formatTime(new Date(task.dueDate))}
                       </p>
                     )}
                   </div>
                   <div className={`w-2 h-2 rounded-full ${
                     task.priority === 'URGENT_IMPORTANT' ? 'bg-red-500' :
                     task.priority === 'URGENT_NOT_IMPORTANT' ? 'bg-yellow-500' :
-                    task.priority === 'NOT_URGENT_IMPORTANT' ? 'bg-blue-500' :
+                    task.priority === 'NOT_URGENT_IMPORTANT' ? 'bg-primary-500' :
                     'bg-gray-500'
                   }`} />
                 </div>
@@ -181,14 +198,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Upcoming Bills
+              {t('upcomingBills')}
             </h3>
             <AlertCircle className="text-red-500" size={20} />
           </div>
           <div className="space-y-3">
             {upcomingBills.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No upcoming bills
+                {t('noTasksToday')}
               </p>
             ) : (
               upcomingBills.map((bill: any) => (
@@ -201,12 +218,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       {bill.title}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Due: {formatDate(new Date(bill.dueDate))}
+                      {t('dueDate')}: {formatDate(new Date(bill.dueDate))}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-red-600 dark:text-red-400">
-                      ${bill.amount.toFixed(2)}
+                      {currencySymbol}{bill.amount.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {bill.currency}
@@ -222,14 +239,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Recent Notes
+              {t('recentNotes')}
             </h3>
             <FileText className="text-purple-500" size={20} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {recentNotes.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8 col-span-2">
-                No notes created yet
+                {t('noRecentNotes')}
               </p>
             ) : (
               recentNotes.map((note: any) => (

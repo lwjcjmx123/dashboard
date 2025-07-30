@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { useClientTasks, useClientBills, useClientPomodoroSessions, useClientEvents } from '@/lib/client-data-hooks';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate, getMonthDates, addMonths, isToday, getWeekDates, addDays, formatTime } from '@/utils/dateUtils';
 import dayjs from 'dayjs';
 
@@ -14,6 +15,7 @@ interface CalendarProps {
 const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
+  const { t } = useLanguage();
 
   const { tasks } = useClientTasks();
   const { bills } = useClientBills();
@@ -123,9 +125,9 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
   };
 
   const viewButtons = [
-    { id: 'month', label: 'Month' },
-    { id: 'week', label: 'Week' },
-    { id: 'day', label: 'Day' },
+    { id: 'month', label: t('month') },
+    { id: 'week', label: t('week') },
+    { id: 'day', label: t('day') },
   ];
 
   const dates = getDatesForView();
@@ -136,7 +138,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Calendar
+            {t('calendar')}
           </h2>
           <div className="flex items-center gap-2">
             <button
@@ -166,7 +168,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                 onClick={() => setView(button.id as CalendarView)}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   view === button.id
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
@@ -175,9 +177,9 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
             ))}
           </div>
           
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+          <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
             <Plus size={20} />
-            Add Event
+            {t('addEvent')}
           </button>
         </div>
       </div>

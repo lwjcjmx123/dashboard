@@ -8,11 +8,13 @@ import {
   Edit3,
 } from "lucide-react";
 import { useClientTasks } from "@/lib/client-data-hooks";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDate } from "@/utils/dateUtils";
 import dayjs from "dayjs";
 
 const Tasks: React.FC = () => {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useClientTasks();
+  const { t } = useLanguage();
   const [editingTask, setEditingTask] = useState<any>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,10 +40,10 @@ const Tasks: React.FC = () => {
   };
 
   const priorityLabels = {
-    URGENT_IMPORTANT: "Urgent & Important",
-    URGENT_NOT_IMPORTANT: "Urgent",
-    NOT_URGENT_IMPORTANT: "Important",
-    NOT_URGENT_NOT_IMPORTANT: "Low Priority",
+    URGENT_IMPORTANT: t('urgentImportant'),
+    URGENT_NOT_IMPORTANT: t('urgent'),
+    NOT_URGENT_IMPORTANT: t('important'),
+    NOT_URGENT_NOT_IMPORTANT: t('lowPriority'),
   };
 
   const filteredTasks = tasks.filter((task: any) => {
@@ -134,9 +136,9 @@ const Tasks: React.FC = () => {
     ),
   };
 
-  if (loading) return <div className="p-6">Loading tasks...</div>;
+  if (loading) return <div className="p-6">{t('loading')}...</div>;
   if (error)
-    return <div className="p-6">Error loading tasks: {error.message}</div>;
+    return <div className="p-6">Error: {error.message}</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -144,7 +146,7 @@ const Tasks: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Tasks
+            {t('tasks')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Organize your tasks with the Eisenhower Matrix
@@ -152,10 +154,10 @@ const Tasks: React.FC = () => {
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
         >
           <Plus size={20} />
-          Add Task
+          {t('addTask')}
         </button>
       </div>
 
@@ -168,23 +170,23 @@ const Tasks: React.FC = () => {
           />
           <input
             type="text"
-            placeholder="Search tasks..."
+            placeholder={t('searchTasks')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value)}
-          className="px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="all">All Priorities</option>
-          <option value="URGENT_IMPORTANT">Urgent & Important</option>
-          <option value="URGENT_NOT_IMPORTANT">Urgent</option>
-          <option value="NOT_URGENT_IMPORTANT">Important</option>
-          <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
+          <option value="all">{t('all')}</option>
+          <option value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
+          <option value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
+          <option value="NOT_URGENT_IMPORTANT">{t('important')}</option>
+          <option value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
         </select>
 
         <label className="flex items-center gap-2">
@@ -192,10 +194,10 @@ const Tasks: React.FC = () => {
             type="checkbox"
             checked={showCompleted}
             onChange={(e) => setShowCompleted(e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">
-            Show completed
+            {t('showCompleted')}
           </span>
         </label>
       </div>
@@ -234,7 +236,7 @@ const Tasks: React.FC = () => {
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {tasks.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No tasks in this category
+                  {t('noTasks')}
                 </p>
               ) : (
                 tasks.map((task: any) => (
@@ -247,7 +249,7 @@ const Tasks: React.FC = () => {
                         type="checkbox"
                         checked={task.completed}
                         onChange={() => toggleTask(task)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 mt-1"
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 mt-1"
                       />
                       <div className="flex-1">
                         <h4
@@ -268,7 +270,7 @@ const Tasks: React.FC = () => {
                         <div className="flex items-center gap-4 mt-2">
                           {task.dueDate && (
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Due: {formatDate(new Date(task.dueDate), "24")}
+                              {t('dueDate')}: {formatDate(new Date(task.dueDate), "24")}
                             </span>
                           )}
                           {task.tags && task.tags.length > 0 && (
@@ -288,7 +290,7 @@ const Tasks: React.FC = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setEditingTask(task)}
-                          className="text-blue-500 hover:text-blue-600"
+                          className="text-primary-500 hover:text-primary-600"
                         >
                           <Edit3 size={16} />
                         </button>
@@ -324,13 +326,13 @@ const Tasks: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Edit Task
+              {t('updateTask')}
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title
+                  {t('taskTitle')}
                 </label>
                 <input
                   type="text"
@@ -338,13 +340,13 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setEditingTask({ ...editingTask, title: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
+                  {t('taskDescription')}
                 </label>
                 <textarea
                   value={editingTask.description}
@@ -354,32 +356,32 @@ const Tasks: React.FC = () => {
                       description: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   rows={3}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Priority
+                  {t('priority')}
                 </label>
                 <select
                   value={editingTask.priority}
                   onChange={(e) =>
                     setEditingTask({ ...editingTask, priority: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="URGENT_IMPORTANT">Urgent & Important</option>
-                  <option value="URGENT_NOT_IMPORTANT">Urgent</option>
-                  <option value="NOT_URGENT_IMPORTANT">Important</option>
-                  <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
+                  <option value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
+                  <option value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
+                  <option value="NOT_URGENT_IMPORTANT">{t('important')}</option>
+                  <option value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Due Date
+                  {t('dueDate')}
                 </label>
                 <input
                   type="datetime-local"
@@ -400,13 +402,13 @@ const Tasks: React.FC = () => {
                 onClick={() => setEditingTask(null)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 onClick={() => handleEditTask(editingTask)}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
               >
-                保存修改
+                {t('save')}
               </button>
             </div>
           </div>
@@ -417,7 +419,7 @@ const Tasks: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Add New Task
+              {t('createTask')}
             </h3>
 
             <div className="space-y-4">
@@ -431,7 +433,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, title: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter task title"
                 />
               </div>
@@ -445,7 +447,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Enter task description"
                   rows={3}
                 />
@@ -463,7 +465,7 @@ const Tasks: React.FC = () => {
                       priority: e.target.value as any,
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="URGENT_IMPORTANT">Urgent & Important</option>
                   <option value="URGENT_NOT_IMPORTANT">Urgent</option>
@@ -482,7 +484,7 @@ const Tasks: React.FC = () => {
                   onChange={(e) =>
                     setNewTask({ ...newTask, dueDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -492,13 +494,13 @@ const Tasks: React.FC = () => {
                 onClick={() => setShowAddForm(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleAddTask}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
               >
-                Add Task
+                {t('addTask')}
               </button>
             </div>
           </div>

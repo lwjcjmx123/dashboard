@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Search, Tag, Calendar, Edit3, Trash2, Archive, FileText } from 'lucide-react';
 import { useClientNotes } from '@/lib/client-data-hooks';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/utils/dateUtils';
 import { marked } from 'marked';
 
 const Notes: React.FC = () => {
   const { notes, loading, error, createNote, updateNote, deleteNote } = useClientNotes();
+  const { t } = useLanguage();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -44,7 +46,7 @@ const Notes: React.FC = () => {
   const handleNewNote = async () => {
     try {
       const newNote = await createNote({
-        title: 'New Note',
+        title: t('newNote'),
         content: '',
         tags: [],
       });
@@ -142,8 +144,8 @@ const Notes: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading notes...</div>;
-  if (error) return <div className="p-6">Error loading notes: {error.message}</div>;
+  if (loading) return <div className="p-6">{t('loadingNotes')}</div>;
+  if (error) return <div className="p-6">{t('errorLoadingNotes')}: {error.message}</div>;
 
   return (
     <div className="flex h-full">
@@ -153,14 +155,14 @@ const Notes: React.FC = () => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Notes
+              {t('notes')}
             </h2>
             <button
               onClick={handleNewNote}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
             >
               <Plus size={16} />
-              New
+              {t('newNote')}
             </button>
           </div>
 
@@ -169,10 +171,10 @@ const Notes: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search notes..."
+              placeholder={t('searchNotes')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -181,7 +183,7 @@ const Notes: React.FC = () => {
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Tags</option>
               {allTags.map(tag => (
@@ -194,7 +196,7 @@ const Notes: React.FC = () => {
                 type="checkbox"
                 checked={showArchived}
                 onChange={(e) => setShowArchived(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 Show archived
@@ -209,7 +211,7 @@ const Notes: React.FC = () => {
             <div className="p-4 text-center">
               <FileText className="mx-auto text-gray-400 mb-2" size={48} />
               <p className="text-gray-500 dark:text-gray-400">
-                {searchTerm || selectedTag ? 'No notes found' : 'No notes yet'}
+                {searchTerm || selectedTag ? 'No notes found' : t('noRecentNotes')}
               </p>
             </div>
           ) : (
@@ -220,7 +222,7 @@ const Notes: React.FC = () => {
                   onClick={() => handleSelectNote(note)}
                   className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                     selectedNote?.id === note.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                      ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   } ${note.archived ? 'opacity-60' : ''}`}
                 >
@@ -259,7 +261,7 @@ const Notes: React.FC = () => {
                       {note.tags.slice(0, 3).map((tag: any, index: number) => (
                         <span
                           key={index}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 text-xs rounded-full"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs rounded-full"
                         >
                           <Tag size={10} />
                           {tag.name}
@@ -305,7 +307,7 @@ const Notes: React.FC = () => {
                       value={noteForm.title}
                       onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
                       className="text-xl font-bold w-full bg-transparent border-none outline-none text-gray-900 dark:text-white"
-                      placeholder="Note title"
+                      placeholder={t('noteTitle')}
                     />
                   ) : (
                     <h1 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -324,22 +326,22 @@ const Notes: React.FC = () => {
                         onClick={() => setIsEditing(false)}
                         className="px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                       >
-                        Cancel
+                        {t('cancel')}
                       </button>
                       <button
                         onClick={handleSaveNote}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                        className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
                       >
-                        Save
+                        {t('save')}
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                      className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
                     >
                       <Edit3 size={16} />
-                      Edit
+                      {t('edit')}
                     </button>
                   )}
                 </div>
@@ -352,7 +354,7 @@ const Notes: React.FC = () => {
                     {noteForm.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 text-xs rounded-full"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400 text-xs rounded-full"
                       >
                         <Tag size={12} />
                         {tag}
@@ -373,14 +375,14 @@ const Notes: React.FC = () => {
                       value={noteForm.tagInput}
                       onChange={(e) => setNoteForm({ ...noteForm, tagInput: e.target.value })}
                       onKeyPress={handleKeyPress}
-                      className="flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="Add a tag"
                     />
                     <button
                       onClick={handleAddTag}
                       className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
                     >
-                      Add
+                      {t('add')}
                     </button>
                   </div>
                 </div>
@@ -408,7 +410,7 @@ const Notes: React.FC = () => {
                   value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
                   className="w-full h-full resize-none border-none outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  placeholder="Write your note here... (Markdown supported)"
+                  placeholder={t('noteContent')}
                 />
               ) : (
                 <div className="prose max-w-none prose-gray dark:prose-invert">

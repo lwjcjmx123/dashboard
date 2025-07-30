@@ -1,45 +1,101 @@
-import React, { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Plus, CreditCard } from 'lucide-react';
-import { useClientBills, useClientExpenses } from '@/lib/client-data-hooks';
-import { formatDate } from '@/utils/dateUtils';
-import DatePicker from '../UI/DatePicker';
-import dayjs from 'dayjs';
+import React, { useState } from "react";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Plus,
+  CreditCard,
+} from "lucide-react";
+import {
+  useClientBills,
+  useClientExpenses,
+  useClientUserSettings,
+} from "@/lib/client-data-hooks";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDate } from "@/utils/dateUtils";
+import DatePicker from "../UI/DatePicker";
+import dayjs from "dayjs";
 
 const Finance: React.FC = () => {
-  const { bills, loading: billsLoading, createBill, updateBill, deleteBill } = useClientBills();
-  const { expenses, loading: expensesLoading, createExpense, deleteExpense } = useClientExpenses();
-  
-  const [activeTab, setActiveTab] = useState<'overview' | 'bills' | 'expenses' | 'budget'>('overview');
+  const {
+    bills,
+    loading: billsLoading,
+    createBill,
+    updateBill,
+    deleteBill,
+  } = useClientBills();
+  const {
+    expenses,
+    loading: expensesLoading,
+    createExpense,
+    deleteExpense,
+  } = useClientExpenses();
+  const { settings, loading: settingsLoading } = useClientUserSettings();
+  const { t } = useLanguage();
+
+  // Currency symbol mapping
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: { [key: string]: string } = {
+      CNY: "¥",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      JPY: "¥",
+    };
+    return symbols[currency] || "$";
+  };
+
+  const currencySymbol = settings ? getCurrencySymbol(settings.currency) : "$";
+
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "bills" | "expenses" | "budget"
+  >("overview");
   const [showAddBill, setShowAddBill] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
-  
+
   const [newBill, setNewBill] = useState({
-    title: '',
-    amount: '',
-    category: '',
-    dueDate: '',
+    title: "",
+    amount: "",
+    category: "",
+    dueDate: "",
     recurring: false,
   });
-  
+
   const [newExpense, setNewExpense] = useState({
-    title: '',
-    amount: '',
-    category: '',
-    description: '',
-    date: dayjs().format('YYYY-MM-DD'),
+    title: "",
+    amount: "",
+    category: "",
+    description: "",
+    date: dayjs().format("YYYY-MM-DD"),
   });
 
   // Calculate financial metrics
-  const totalBills = bills.reduce((sum: number, bill: any) => sum + bill.amount, 0);
-  const unpaidBills = bills.filter((bill: any) => !bill.paid).reduce((sum: number, bill: any) => sum + bill.amount, 0);
-  const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-  const thisMonthExpenses = expenses.filter((expense: any) => {
-    return dayjs().isSame(dayjs(expense.date), 'month');
-  }).reduce((sum: number, expense: any) => sum + expense.amount, 0);
+  const totalBills = bills.reduce(
+    (sum: number, bill: any) => sum + bill.amount,
+    0
+  );
+  const unpaidBills = bills
+    .filter((bill: any) => !bill.paid)
+    .reduce((sum: number, bill: any) => sum + bill.amount, 0);
+  const totalExpenses = expenses.reduce(
+    (sum: number, expense: any) => sum + expense.amount,
+    0
+  );
+  const thisMonthExpenses = expenses
+    .filter((expense: any) => {
+      return dayjs().isSame(dayjs(expense.date), "month");
+    })
+    .reduce((sum: number, expense: any) => sum + expense.amount, 0);
 
-  const upcomingBills = bills.filter((bill: any) => {
-    return !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, 'day'));
-  }).sort((a: any, b: any) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf());
+  const upcomingBills = bills
+    .filter((bill: any) => {
+      return !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, "day"));
+    })
+    .sort(
+      (a: any, b: any) =>
+        dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
+    );
 
   const expenseCategories = expenses.reduce((acc: any, expense: any) => {
     acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
@@ -48,7 +104,7 @@ const Finance: React.FC = () => {
 
   const handleAddBill = async () => {
     if (!newBill.title || !newBill.amount || !newBill.dueDate) return;
-    
+
     try {
       await createBill({
         title: newBill.title,
@@ -57,17 +113,23 @@ const Finance: React.FC = () => {
         dueDate: dayjs(newBill.dueDate).toISOString(),
         recurring: newBill.recurring,
       });
-      
-      setNewBill({ title: '', amount: '', category: '', dueDate: '', recurring: false });
+
+      setNewBill({
+        title: "",
+        amount: "",
+        category: "",
+        dueDate: "",
+        recurring: false,
+      });
       setShowAddBill(false);
     } catch (error) {
-      console.error('Error creating bill:', error);
+      console.error("Error creating bill:", error);
     }
   };
 
   const handleAddExpense = async () => {
     if (!newExpense.title || !newExpense.amount || !newExpense.category) return;
-    
+
     try {
       await createExpense({
         title: newExpense.title,
@@ -77,17 +139,17 @@ const Finance: React.FC = () => {
         description: newExpense.description,
         tags: [],
       });
-      
-      setNewExpense({ 
-        title: '', 
-        amount: '', 
-        category: '', 
-        description: '', 
-        date: dayjs().format('YYYY-MM-DD') 
+
+      setNewExpense({
+        title: "",
+        amount: "",
+        category: "",
+        description: "",
+        date: dayjs().format("YYYY-MM-DD"),
       });
       setShowAddExpense(false);
     } catch (error) {
-      console.error('Error creating expense:', error);
+      console.error("Error creating expense:", error);
     }
   };
 
@@ -103,19 +165,18 @@ const Finance: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error('Error updating bill:', error);
+      console.error("Error updating bill:", error);
     }
   };
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: TrendingUp },
-    { id: 'bills', label: 'Bills', icon: AlertCircle },
-    { id: 'expenses', label: 'Expenses', icon: DollarSign },
-    { id: 'budget', label: 'Budget', icon: CreditCard },
+    { id: "overview", label: t("overview"), icon: TrendingUp },
+    { id: "bills", label: t("bills"), icon: AlertCircle },
+    { id: "expenses", label: t("expenses"), icon: DollarSign },
   ];
 
-  if (billsLoading || expensesLoading) {
-    return <div className="p-6">Loading financial data...</div>;
+  if (billsLoading || expensesLoading || settingsLoading) {
+    return <div className="p-6">{t("loading")}</div>;
   }
 
   return (
@@ -124,10 +185,10 @@ const Finance: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Finance
+            {t("finance")}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track your expenses, bills, and budget
+            {t("trackExpensesBillsBudget")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -136,14 +197,14 @@ const Finance: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
           >
             <Plus size={20} />
-            Add Bill
+            {t("addBill")}
           </button>
           <button
             onClick={() => setShowAddExpense(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
             <Plus size={20} />
-            Add Expense
+            {t("addExpense")}
           </button>
         </div>
       </div>
@@ -158,8 +219,8 @@ const Finance: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors duration-200 ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               }`}
             >
               <Icon size={16} />
@@ -170,14 +231,17 @@ const Finance: React.FC = () => {
       </div>
 
       {/* Overview Tab */}
-      {activeTab === 'overview' && (
+      {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Financial Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                  <TrendingUp className="text-green-600 dark:text-green-400" size={24} />
+                  <TrendingUp
+                    className="text-green-600 dark:text-green-400"
+                    size={24}
+                  />
                 </div>
                 <div className="flex items-center gap-1 text-sm">
                   <TrendingUp size={16} className="text-green-500" />
@@ -186,10 +250,11 @@ const Finance: React.FC = () => {
               </div>
               <div className="mt-4">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${totalExpenses.toFixed(2)}
+                  {currencySymbol}
+                  {totalExpenses.toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Expenses
+                  {t("totalExpenses")}
                 </p>
               </div>
             </div>
@@ -197,15 +262,19 @@ const Finance: React.FC = () => {
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-                  <AlertCircle className="text-red-600 dark:text-red-400" size={24} />
+                  <AlertCircle
+                    className="text-red-600 dark:text-red-400"
+                    size={24}
+                  />
                 </div>
               </div>
               <div className="mt-4">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${unpaidBills.toFixed(2)}
+                  {currencySymbol}
+                  {unpaidBills.toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Unpaid Bills
+                  {t("unpaidBills")}
                 </p>
               </div>
             </div>
@@ -213,7 +282,10 @@ const Finance: React.FC = () => {
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                  <DollarSign className="text-blue-600 dark:text-blue-400" size={24} />
+                  <DollarSign
+                    className="text-blue-600 dark:text-blue-400"
+                    size={24}
+                  />
                 </div>
                 <div className="flex items-center gap-1 text-sm">
                   <TrendingDown size={16} className="text-red-500" />
@@ -222,10 +294,11 @@ const Finance: React.FC = () => {
               </div>
               <div className="mt-4">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${thisMonthExpenses.toFixed(2)}
+                  {currencySymbol}
+                  {thisMonthExpenses.toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  This Month
+                  {t("thisMonth")}
                 </p>
               </div>
             </div>
@@ -233,15 +306,19 @@ const Finance: React.FC = () => {
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                  <CreditCard className="text-purple-600 dark:text-purple-400" size={24} />
+                  <CreditCard
+                    className="text-purple-600 dark:text-purple-400"
+                    size={24}
+                  />
                 </div>
               </div>
               <div className="mt-4">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${totalBills.toFixed(2)}
+                  {currencySymbol}
+                  {totalBills.toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Bills
+                  {t("totalBills")}
                 </p>
               </div>
             </div>
@@ -252,12 +329,12 @@ const Finance: React.FC = () => {
             {/* Upcoming Bills */}
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Upcoming Bills
+                {t("upcomingBills")}
               </h3>
               <div className="space-y-3">
                 {upcomingBills.length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                    No upcoming bills
+                    {t("noUpcomingBills")}
                   </p>
                 ) : (
                   upcomingBills.map((bill: any) => (
@@ -270,12 +347,13 @@ const Finance: React.FC = () => {
                           {bill.title}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Due: {formatDate(new Date(bill.dueDate), '24')}
+                          {t("due")}: {formatDate(new Date(bill.dueDate), "24")}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-red-600 dark:text-red-400">
-                          ${bill.amount.toFixed(2)}
+                          {currencySymbol}
+                          {bill.amount.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {bill.category}
@@ -290,12 +368,12 @@ const Finance: React.FC = () => {
             {/* Expense Categories */}
             <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Expense Categories
+                {t("expenseCategories")}
               </h3>
               <div className="space-y-3">
                 {Object.entries(expenseCategories).length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                    No expense categories
+                    {t("noExpenseCategories")}
                   </p>
                 ) : (
                   Object.entries(expenseCategories)
@@ -313,10 +391,15 @@ const Finance: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-blue-600 dark:text-blue-400">
-                            ${(amount as number).toFixed(2)}
+                            {currencySymbol}
+                            {(amount as number).toFixed(2)}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {(((amount as number) / totalExpenses) * 100).toFixed(1)}%
+                            {(
+                              ((amount as number) / totalExpenses) *
+                              100
+                            ).toFixed(1)}
+                            %
                           </p>
                         </div>
                       </div>
@@ -329,17 +412,17 @@ const Finance: React.FC = () => {
       )}
 
       {/* Bills Tab */}
-      {activeTab === 'bills' && (
+      {activeTab === "bills" && (
         <div className="space-y-6">
           <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                All Bills
+                {t("allBills")}
               </h3>
               <div className="space-y-3">
                 {bills.length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                    No bills added yet
+                    {t("noBillsAddedYet")}
                   </p>
                 ) : (
                   bills.map((bill: any) => (
@@ -355,25 +438,30 @@ const Finance: React.FC = () => {
                           className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                         />
                         <div>
-                          <p className={`font-medium ${
-                            bill.paid 
-                              ? 'line-through text-gray-500' 
-                              : 'text-gray-900 dark:text-white'
-                          }`}>
+                          <p
+                            className={`font-medium ${
+                              bill.paid
+                                ? "line-through text-gray-500"
+                                : "text-gray-900 dark:text-white"
+                            }`}
+                          >
                             {bill.title}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Due: {formatDate(new Date(bill.dueDate), '24')}
+                            Due: {formatDate(new Date(bill.dueDate), "24")}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`font-bold ${
-                          bill.paid 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          ${bill.amount.toFixed(2)}
+                        <p
+                          className={`font-bold ${
+                            bill.paid
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {currencySymbol}
+                          {bill.amount.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {bill.category}
@@ -389,47 +477,52 @@ const Finance: React.FC = () => {
       )}
 
       {/* Expenses Tab */}
-      {activeTab === 'expenses' && (
+      {activeTab === "expenses" && (
         <div className="space-y-6">
           <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Recent Expenses
+                {t("recentExpenses")}
               </h3>
               <div className="space-y-3">
                 {expenses.length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                    No expenses recorded yet
+                    {t("noExpensesRecordedYet")}
                   </p>
                 ) : (
-                  expenses.slice().reverse().map((expense: any) => (
-                    <div
-                      key={expense.id}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {expense.title}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {formatDate(new Date(expense.date), '24')} • {expense.category}
-                        </p>
-                        {expense.description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {expense.description}
+                  expenses
+                    .slice()
+                    .reverse()
+                    .map((expense: any) => (
+                      <div
+                        key={expense.id}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {expense.title}
                           </p>
-                        )}
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {formatDate(new Date(expense.date), "24")} •{" "}
+                            {expense.category}
+                          </p>
+                          {expense.description && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              {expense.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-blue-600 dark:text-blue-400">
+                            {currencySymbol}
+                            {expense.amount.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {expense.currency}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-blue-600 dark:text-blue-400">
-                          ${expense.amount.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {expense.currency}
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
             </div>
@@ -442,87 +535,102 @@ const Finance: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Add New Bill
+              {t("addNewBill")}
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title
+                  {t("title")}
                 </label>
                 <input
                   type="text"
                   value={newBill.title}
-                  onChange={(e) => setNewBill({ ...newBill, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewBill({ ...newBill, title: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter bill title"
+                  placeholder={t("enterBillTitle")}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Amount
+                  {t("amount")}
                 </label>
                 <input
                   type="number"
                   value={newBill.amount}
-                  onChange={(e) => setNewBill({ ...newBill, amount: e.target.value })}
+                  onChange={(e) =>
+                    setNewBill({ ...newBill, amount: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Category
+                  {t("category")}
                 </label>
                 <input
                   type="text"
                   value={newBill.category}
-                  onChange={(e) => setNewBill({ ...newBill, category: e.target.value })}
+                  onChange={(e) =>
+                    setNewBill({ ...newBill, category: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Utilities, Rent, etc."
+                  placeholder={t("billCategoryPlaceholder")}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Due Date
+                  {t("dueDate")}
                 </label>
                 <DatePicker
-                  selected={newBill.dueDate ? dayjs(newBill.dueDate).toDate() : null}
-                  onChange={(date) => setNewBill({ ...newBill, dueDate: date ? dayjs(date).format('YYYY-MM-DD') : '' })}
-                  placeholder="Select due date"
+                  selected={
+                    newBill.dueDate ? dayjs(newBill.dueDate).toDate() : null
+                  }
+                  onChange={(date) =>
+                    setNewBill({
+                      ...newBill,
+                      dueDate: date ? dayjs(date).format("YYYY-MM-DD") : "",
+                    })
+                  }
+                  placeholder={t("selectDueDate")}
                 />
               </div>
-              
+
               <div>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={newBill.recurring}
-                    onChange={(e) => setNewBill({ ...newBill, recurring: e.target.checked })}
+                    onChange={(e) =>
+                      setNewBill({ ...newBill, recurring: e.target.checked })
+                    }
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Recurring bill
+                    {t("recurringBill")}
                   </span>
                 </label>
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddBill(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 onClick={handleAddBill}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
               >
-                Add Bill
+                {t("addBill")}
               </button>
             </div>
           </div>
@@ -534,86 +642,104 @@ const Finance: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Add New Expense
+              {t("addNewExpense")}
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title
+                  {t("title")}
                 </label>
                 <input
                   type="text"
                   value={newExpense.title}
-                  onChange={(e) => setNewExpense({ ...newExpense, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewExpense({ ...newExpense, title: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter expense title"
+                  placeholder={t("enterExpenseTitle")}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Amount
+                  {t("amount")}
                 </label>
                 <input
                   type="number"
                   value={newExpense.amount}
-                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                  onChange={(e) =>
+                    setNewExpense({ ...newExpense, amount: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Category
+                  {t("category")}
                 </label>
                 <input
                   type="text"
                   value={newExpense.category}
-                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                  onChange={(e) =>
+                    setNewExpense({ ...newExpense, category: e.target.value })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Food, Transport, etc."
+                  placeholder={t("expenseCategoryPlaceholder")}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Date
+                  {t("dueDate")}
                 </label>
                 <DatePicker
-                  selected={newExpense.date ? dayjs(newExpense.date).toDate() : null}
-                  onChange={(date) => setNewExpense({ ...newExpense, date: date ? dayjs(date).format('YYYY-MM-DD') : '' })}
-                  placeholder="Select date"
+                  selected={
+                    newExpense.date ? dayjs(newExpense.date).toDate() : null
+                  }
+                  onChange={(date) =>
+                    setNewExpense({
+                      ...newExpense,
+                      date: date ? dayjs(date).format("YYYY-MM-DD") : "",
+                    })
+                  }
+                  placeholder={t("selectDate")}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
+                  {t("description")}
                 </label>
                 <textarea
                   value={newExpense.description}
-                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewExpense({
+                      ...newExpense,
+                      description: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional description"
+                  placeholder={t("optionalDescription")}
                   rows={3}
                 />
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddExpense(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 onClick={handleAddExpense}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Add Expense
+                {t("addExpense")}
               </button>
             </div>
           </div>
