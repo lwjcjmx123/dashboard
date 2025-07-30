@@ -1,6 +1,5 @@
-// Unified data access layer that switches between Prisma and IndexedDB
+// Unified data access layer using IndexedDB
 
-import { storageConfig } from './storage-config';
 import { getIndexedDBAdapter } from './indexeddb-adapter';
 
 // Define the interface that both adapters should implement
@@ -45,6 +44,12 @@ interface DataAdapter {
   pomodoroSession: {
     findMany: (options?: any) => Promise<any[]>;
     create: (options: any) => Promise<any>;
+  };
+  pomodoroCategory: {
+    findMany: (options?: any) => Promise<any[]>;
+    create: (options: any) => Promise<any>;
+    update: (options: any) => Promise<any>;
+    delete: (options: any) => Promise<any>;
   };
   userSettings: {
     findUnique: (options: any) => Promise<any>;
@@ -200,6 +205,25 @@ class IndexedDBDataAdapter implements DataAdapter {
     create: async (options: any) => {
       const adapter = await this.getAdapter();
       return adapter.create('pomodoroSessions', options);
+    },
+  };
+
+  pomodoroCategory = {
+    findMany: async (options?: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.findMany('pomodoroCategories', options);
+    },
+    create: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.create('pomodoroCategories', options);
+    },
+    update: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.update('pomodoroCategories', options);
+    },
+    delete: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.delete('pomodoroCategories', options);
     },
   };
 
@@ -427,6 +451,44 @@ class NoOpDataAdapter implements DataAdapter {
     delete: async () => this.generateMockPomodoroSession(),
   };
 
+  private generateMockPomodoroCategory() {
+    return {
+      id: 'mock-category-id',
+      name: '工作',
+      color: '#ef4444',
+      description: '工作相关的番茄钟',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userId: 'mock-user-id'
+    };
+  }
+
+  pomodoroCategory = {
+    findMany: async () => [
+      {
+        id: '1',
+        name: '工作',
+        color: '#ef4444',
+        description: '工作相关的番茄钟',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: 'mock-user-id'
+      },
+      {
+        id: '2',
+        name: '学习',
+        color: '#3b82f6',
+        description: '学习相关的番茄钟',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: 'mock-user-id'
+      }
+    ],
+    create: async () => this.generateMockPomodoroCategory(),
+    update: async () => this.generateMockPomodoroCategory(),
+    delete: async () => this.generateMockPomodoroCategory(),
+  };
+
   userSettings = {
     findUnique: async () => this.generateMockUserSettings(),
     create: async () => this.generateMockUserSettings(),
@@ -499,90 +561,7 @@ class NoOpDataAdapter implements DataAdapter {
   };
 }
 
-// Prisma adapter implementation (wrapper around existing prisma client)
-class PrismaDataAdapter implements DataAdapter {
-  private prisma: any;
 
-  constructor() {
-    // Dynamically import prisma only when needed
-    if (typeof window === 'undefined') {
-      // Server-side
-      try {
-        const { prisma } = require('./prisma');
-        if (!prisma) {
-          throw new Error('Prisma client not initialized');
-        }
-        this.prisma = prisma;
-      } catch (error) {
-        throw new Error('Prisma not available');
-      }
-    } else {
-      // Client-side - Prisma not available
-      throw new Error('Prisma not available on client-side');
-    }
-  }
-
-  user = {
-    findUnique: (options: any) => this.prisma.user.findUnique(options),
-    create: (options: any) => this.prisma.user.create(options),
-    update: (options: any) => this.prisma.user.update(options),
-    upsert: (options: any) => this.prisma.user.upsert(options),
-  };
-
-  task = {
-    findMany: (options?: any) => this.prisma.task.findMany(options),
-    findUnique: (options: any) => this.prisma.task.findUnique(options),
-    create: (options: any) => this.prisma.task.create(options),
-    update: (options: any) => this.prisma.task.update(options),
-    delete: (options: any) => this.prisma.task.delete(options),
-  };
-
-  event = {
-    findMany: (options?: any) => this.prisma.event.findMany(options),
-    create: (options: any) => this.prisma.event.create(options),
-    update: (options: any) => this.prisma.event.update(options),
-    delete: (options: any) => this.prisma.event.delete(options),
-  };
-
-  bill = {
-    findMany: (options?: any) => this.prisma.bill.findMany(options),
-    create: (options: any) => this.prisma.bill.create(options),
-    update: (options: any) => this.prisma.bill.update(options),
-    delete: (options: any) => this.prisma.bill.delete(options),
-  };
-
-  expense = {
-    findMany: (options?: any) => this.prisma.expense.findMany(options),
-    create: (options: any) => this.prisma.expense.create(options),
-    update: (options: any) => this.prisma.expense.update(options),
-    delete: (options: any) => this.prisma.expense.delete(options),
-  };
-
-  note = {
-    findMany: (options?: any) => this.prisma.note.findMany(options),
-    create: (options: any) => this.prisma.note.create(options),
-    update: (options: any) => this.prisma.note.update(options),
-    delete: (options: any) => this.prisma.note.delete(options),
-  };
-
-  pomodoroSession = {
-    findMany: (options?: any) => this.prisma.pomodoroSession.findMany(options),
-    create: (options: any) => this.prisma.pomodoroSession.create(options),
-  };
-
-  userSettings = {
-    findUnique: (options: any) => this.prisma.userSettings.findUnique(options),
-    upsert: (options: any) => this.prisma.userSettings.upsert(options),
-  };
-
-  notification = {
-    findMany: (options?: any) => this.prisma.notification.findMany(options),
-    create: (options: any) => this.prisma.notification.create(options),
-    update: (options: any) => this.prisma.notification.update(options),
-    delete: (options: any) => this.prisma.notification.delete(options),
-    markAsRead: (id: string) => this.prisma.notification.update({ where: { id }, data: { read: true } }),
-  };
-}
 
 // Factory function to get the appropriate data adapter
 let serverDataAdapterInstance: DataAdapter | null = null;
@@ -599,29 +578,14 @@ export const getDataAdapter = (): DataAdapter => {
     return clientDataAdapterInstance;
   }
 
-  try {
-    if (storageConfig.useDatabase) {
-      // Server-side with database
-      serverDataAdapterInstance = new PrismaDataAdapter();
-      return serverDataAdapterInstance;
-    } else if (!isServer) {
-      // Client-side - use IndexedDB
-      clientDataAdapterInstance = new IndexedDBDataAdapter();
-      return clientDataAdapterInstance;
-    } else {
-      // Server-side without database - use no-op adapter
-      serverDataAdapterInstance = new NoOpDataAdapter();
-      return serverDataAdapterInstance;
-    }
-  } catch (error) {
-    if (!isServer) {
-      // Client-side fallback to IndexedDB
-      clientDataAdapterInstance = new IndexedDBDataAdapter();
-      return clientDataAdapterInstance;
-    } else {
-      // Server-side - re-throw the error
-      throw error;
-    }
+  if (!isServer) {
+    // Client-side - use IndexedDB
+    clientDataAdapterInstance = new IndexedDBDataAdapter();
+    return clientDataAdapterInstance;
+  } else {
+    // Server-side - use no-op adapter
+    serverDataAdapterInstance = new NoOpDataAdapter();
+    return serverDataAdapterInstance;
   }
 };
 

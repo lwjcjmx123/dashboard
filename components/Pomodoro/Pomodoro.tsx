@@ -1,25 +1,44 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, RotateCcw, Settings, BarChart3, Clock } from "lucide-react";
-import { useClientPomodoroSessions, useClientTasks, useClientUserSettings } from '@/lib/client-data-hooks';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { minutesToHours } from '@/utils/dateUtils';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Settings,
+  BarChart3,
+  Clock,
+  Square,
+} from "lucide-react";
+import {
+  useClientPomodoroSessions,
+  useClientTasks,
+  useClientUserSettings,
+} from "@/lib/client-data-hooks";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { minutesToHours } from "@/utils/dateUtils";
 import dayjs from "dayjs";
-import { formatTime } from "../../utils/dateUtils";
 
 const Pomodoro: React.FC = () => {
-  const { sessions: pomodoroSessions, createSession } = useClientPomodoroSessions();
+  const { sessions: pomodoroSessions, createSession } =
+    useClientPomodoroSessions();
   const { tasks } = useClientTasks();
   const { settings: userSettings, updateSettings } = useClientUserSettings();
+
   const { t } = useLanguage();
+  const { colorScheme } = useTheme();
 
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes
-  const [sessionType, setSessionType] = useState<"WORK" | "BREAK" | "LONG_BREAK">("WORK");
+  const [sessionType, setSessionType] = useState<
+    "WORK" | "BREAK" | "LONG_BREAK"
+  >("WORK");
   const [sessionCount, setSessionCount] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
   const [sessionNotes, setSessionNotes] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedSessionData, setCompletedSessionData] = useState<any>(null);
 
   const intervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
@@ -27,18 +46,20 @@ const Pomodoro: React.FC = () => {
   // Update timeLeft when settings change
   useEffect(() => {
     if (userSettings) {
-      const duration = sessionType === "WORK" 
-        ? userSettings.workDuration 
-        : sessionType === "BREAK" 
-        ? userSettings.shortBreakDuration 
-        : userSettings.longBreakDuration;  
+      const duration =
+        sessionType === "WORK"
+          ? userSettings.workDuration
+          : sessionType === "BREAK"
+          ? userSettings.shortBreakDuration
+          : userSettings.longBreakDuration;
       setTimeLeft(duration * 60);
     }
   }, [userSettings, sessionType]);
 
   const playNotificationSound = useCallback(() => {
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
 
       const context = new AudioContextClass();
@@ -52,7 +73,10 @@ const Pomodoro: React.FC = () => {
       oscillator.type = "sine";
 
       gainNode.gain.setValueAtTime(0.1, context.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        context.currentTime + 0.5
+      );
 
       oscillator.start(context.currentTime);
       oscillator.stop(context.currentTime + 0.5);
@@ -61,32 +85,117 @@ const Pomodoro: React.FC = () => {
     }
   }, []);
 
+  const handleFinishEarly = useCallback(async () => {
+    if (!startTimeRef.current || !userSettings) return;
+
+    setIsActive(false);
+
+    // Calculate actual duration in minutes
+    const actualDuration = Math.ceil(
+      (dayjs().valueOf() - dayjs(startTimeRef.current).valueOf()) / (1000 * 60)
+    );
+
+    // Prepare session data for completion modal
+    const sessionData = {
+      duration: actualDuration,
+      startTime: startTimeRef.current.toISOString(),
+      endTime: dayjs().toISOString(),
+      completed: true,
+      notes: sessionNotes,
+      type: sessionType,
+      taskId: selectedTaskId || undefined,
+    };
+
+    try {
+      await createSession(sessionData);
+
+      // Show completion modal with session data
+      setCompletedSessionData({
+        ...sessionData,
+        taskTitle: selectedTaskId
+          ? tasks.find((t) => t.id === selectedTaskId)?.title || "Unknown Task"
+          : undefined,
+      });
+      setShowCompletionModal(true);
+    } catch (error) {
+      console.error("Error saving pomodoro session:", error);
+
+      // If saving fails, still reset the session
+      const duration =
+        sessionType === "WORK"
+          ? userSettings.workDuration
+          : sessionType === "BREAK"
+          ? userSettings.shortBreakDuration
+          : userSettings.longBreakDuration;
+      setTimeLeft(duration * 60);
+      setSessionNotes("");
+      startTimeRef.current = null;
+    }
+  }, [
+    sessionType,
+    userSettings,
+    selectedTaskId,
+    sessionNotes,
+    createSession,
+    tasks,
+  ]);
+
   const handleSessionComplete = useCallback(async () => {
     setIsActive(false);
     playNotificationSound();
 
     // Save session
     if (startTimeRef.current && userSettings) {
-      try {
-        await createSession({
-          duration: sessionType === "WORK" 
-            ? userSettings.workDuration 
-            : sessionType === "BREAK" 
-            ? userSettings.shortBreakDuration 
+      const sessionData = {
+        duration:
+          sessionType === "WORK"
+            ? userSettings.workDuration
+            : sessionType === "BREAK"
+            ? userSettings.shortBreakDuration
             : userSettings.longBreakDuration,
-          startTime: startTimeRef.current.toISOString(),
-          endTime: dayjs().toISOString(),
-          completed: true,
-          notes: sessionNotes,
-          type: sessionType,
+        startTime: startTimeRef.current.toISOString(),
+        endTime: dayjs().toISOString(),
+        completed: true,
+        notes: sessionNotes,
+        type: sessionType,
+        taskId: selectedTaskId || undefined,
+      };
+
+      try {
+        await createSession(sessionData);
+
+        // Show completion modal with session data
+        setCompletedSessionData({
+          ...sessionData,
+          taskTitle: selectedTaskId
+            ? tasks.find((t) => t.id === selectedTaskId)?.title
+            : null,
         });
+        setShowCompletionModal(true);
       } catch (error) {
-        console.error('Error saving pomodoro session:', error);
+        console.error("Error saving pomodoro session:", error);
       }
     }
 
+    setSessionNotes("");
+    startTimeRef.current = null;
+  }, [
+    sessionType,
+    sessionCount,
+    userSettings,
+    selectedTaskId,
+    sessionNotes,
+    createSession,
+    playNotificationSound,
+    tasks,
+  ]);
+
+  const handleContinueAfterCompletion = useCallback(() => {
+    setShowCompletionModal(false);
+    setCompletedSessionData(null);
+
     // Auto-start next session
-    if (sessionType === "WORK" && userSettings) {
+    if (completedSessionData?.type === "WORK" && userSettings) {
       const newCount = sessionCount + 1;
       setSessionCount(newCount);
 
@@ -98,14 +207,24 @@ const Pomodoro: React.FC = () => {
         setSessionType("BREAK");
         setTimeLeft(userSettings.shortBreakDuration * 60);
       }
+
+      // Auto-start break session
+      setTimeout(() => {
+        setIsActive(true);
+        startTimeRef.current = dayjs().toDate();
+      }, 1000);
     } else if (userSettings) {
+      // After break, start work session
       setSessionType("WORK");
       setTimeLeft(userSettings.workDuration * 60);
-    }
 
-    setSessionNotes("");
-    startTimeRef.current = null;
-  }, [sessionType, sessionCount, userSettings, selectedTaskId, sessionNotes, createSession, playNotificationSound]);
+      // Auto-start work session
+      setTimeout(() => {
+        setIsActive(true);
+        startTimeRef.current = dayjs().toDate();
+      }, 1000);
+    }
+  }, [completedSessionData, sessionCount, userSettings]);
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -146,11 +265,12 @@ const Pomodoro: React.FC = () => {
   const handleReset = () => {
     setIsActive(false);
     if (userSettings) {
-      const duration = sessionType === "WORK" 
-        ? userSettings.workDuration 
-        : sessionType === "BREAK" 
-        ? userSettings.shortBreakDuration 
-        : userSettings.longBreakDuration;
+      const duration =
+        sessionType === "WORK"
+          ? userSettings.workDuration
+          : sessionType === "BREAK"
+          ? userSettings.shortBreakDuration
+          : userSettings.longBreakDuration;
       setTimeLeft(duration * 60);
     }
     startTimeRef.current = null;
@@ -163,54 +283,63 @@ const Pomodoro: React.FC = () => {
   const switchSessionType = (type: "WORK" | "BREAK" | "LONG_BREAK") => {
     setSessionType(type);
     if (userSettings) {
-      const duration = type === "WORK" 
-        ? userSettings.workDuration 
-        : type === "BREAK" 
-        ? userSettings.shortBreakDuration 
-        : userSettings.longBreakDuration;
+      const duration =
+        type === "WORK"
+          ? userSettings.workDuration
+          : type === "BREAK"
+          ? userSettings.shortBreakDuration
+          : userSettings.longBreakDuration;
       setTimeLeft(duration * 60);
     }
     setIsActive(false);
     startTimeRef.current = null;
   };
 
-  const formatTime = (seconds: number): string => {
+  const formatTimeFromSeconds = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const getProgressPercentage = (): number => {
     if (!userSettings) return 0;
-    const totalTime = sessionType === "WORK" 
-      ? userSettings.workDuration * 60 
-      : sessionType === "BREAK" 
-      ? userSettings.shortBreakDuration * 60 
-      : userSettings.longBreakDuration * 60;
+    const totalTime =
+      sessionType === "WORK"
+        ? userSettings.workDuration * 60
+        : sessionType === "BREAK"
+        ? userSettings.shortBreakDuration * 60
+        : userSettings.longBreakDuration * 60;
     return ((totalTime - timeLeft) / totalTime) * 100;
   };
 
   const todaySessions = pomodoroSessions.filter((session: any) => {
-    return dayjs().isSame(dayjs(session.startTime), 'day');
+    return dayjs().isSame(dayjs(session.startTime), "day");
   });
 
-  const todayWorkSessions = todaySessions.filter((s: any) => s.type === "WORK").length;
-  const todayTotalTime = todaySessions.reduce((sum: number, s: any) => sum + s.duration, 0);
+  const todayWorkSessions = todaySessions.filter(
+    (s: any) => s.type === "WORK"
+  ).length;
+  const todayTotalTime = todaySessions.reduce(
+    (sum: number, s: any) => sum + s.duration,
+    0
+  );
 
   const sessionTypeColors = {
-    WORK: "from-red-500 to-red-600",
-    BREAK: "from-green-500 to-green-600",
-    LONG_BREAK: "from-blue-500 to-blue-600",
+    WORK: "from-primary-500 to-primary-600",
+    BREAK: "from-primary-500 to-primary-600",
+    LONG_BREAK: "from-primary-500 to-primary-600",
   };
 
   const sessionTypeLabels = {
-    WORK: t('workSession'),
-    BREAK: t('shortBreak'),
-    LONG_BREAK: t('longBreak'),
+    WORK: t("workSession"),
+    BREAK: t("shortBreak"),
+    LONG_BREAK: t("longBreak"),
   };
 
   if (!userSettings) {
-    return <div className="p-6">{t('loading')}</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
 
   return (
@@ -219,10 +348,10 @@ const Pomodoro: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {t('pomodoro')}
+            {t("pomodoro")}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {t('focusWithPomodoroTechnique')}
+            {t("focusWithPomodoroTechnique")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -231,128 +360,136 @@ const Pomodoro: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
           >
             <BarChart3 size={20} />
-            {t('stats')}
+            {t("stats")}
           </button>
           <button
             onClick={() => setShowSettings(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
           >
             <Settings size={20} />
-            {t('settings')}
+            {t("settings")}
           </button>
         </div>
       </div>
 
-      {/* Main Timer */}
+      {/* Main Timer - 简约现代风格 */}
       <div className="flex justify-center">
-        <div className="relative w-80 h-80 rounded-full p-8 bg-white dark:bg-gray-800 shadow-2xl">
+        <div className="relative w-80 h-80 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
           {/* Progress Ring */}
-          <div className="absolute inset-0 rounded-full">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <div className="absolute inset-6">
+            <svg
+              className="w-full h-full transform -rotate-90"
+              viewBox="0 0 100 100"
+            >
               <circle
                 cx="50"
                 cy="50"
                 r="45"
                 fill="none"
-                stroke="#e5e7eb"
-                strokeWidth="2"
+                stroke="#f1f5f9"
+                strokeWidth="4"
               />
               <circle
                 cx="50"
                 cy="50"
                 r="45"
                 fill="none"
-                stroke="url(#gradient)"
-                strokeWidth="2"
+                stroke={
+                  sessionType === "WORK"
+                    ? "#ef4444"
+                    : sessionType === "BREAK"
+                    ? "#10b981"
+                    : "#3b82f6"
+                }
+                strokeWidth="4"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${2 * Math.PI * 45 * (1 - getProgressPercentage() / 100)}`}
-                className="transition-all duration-1000 ease-in-out"
+                strokeDashoffset={`${
+                  2 * Math.PI * 45 * (1 - getProgressPercentage() / 100)
+                }`}
+                className="transition-all duration-500 ease-out"
               />
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop
-                    offset="0%"
-                    stopColor={
-                      sessionType === "WORK" ? "#ef4444" :
-                      sessionType === "BREAK" ? "#10b981" : "#3b82f6"
-                    }
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={
-                      sessionType === "WORK" ? "#dc2626" :
-                      sessionType === "BREAK" ? "#059669" : "#2563eb"
-                    }
-                  />
-                </linearGradient>
-              </defs>
             </svg>
           </div>
 
-          {/* Timer Content */}
-          <div className="flex flex-col items-center justify-center h-full relative z-10">
-            <div className="text-center mb-4">
-              {/* Session Type Selector */}
-              <div className="flex justify-center mb-2 text-xs">
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            {/* Session Type */}
+            <div className="flex justify-center mb-2">
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 relative z-10">
                 <button
                   onClick={() => switchSessionType("WORK")}
-                  className={`px-3 py-1 rounded-l-md ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     sessionType === "WORK"
-                      ? "bg-red-500 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   }`}
+                  style={{ pointerEvents: "auto" }}
                 >
-                  {t('work')}
+                  {t("work")}
                 </button>
                 <button
                   onClick={() => switchSessionType("BREAK")}
-                  className={`px-3 py-1 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     sessionType === "BREAK"
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   }`}
+                  style={{ pointerEvents: "auto" }}
                 >
-                  {t('break')}
+                  {t("break")}
                 </button>
                 <button
                   onClick={() => switchSessionType("LONG_BREAK")}
-                  className={`px-3 py-1 rounded-r-md ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     sessionType === "LONG_BREAK"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   }`}
+                  style={{ pointerEvents: "auto" }}
                 >
-                  {t('long')}
+                  {t("long")}
                 </button>
               </div>
+            </div>
 
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                {sessionTypeLabels[sessionType]}
-              </p>
-              <p className="text-5xl font-bold text-gray-900 dark:text-white">
-                {formatTime(timeLeft)}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                {t('sessionOf')} {sessionCount + 1} {t('of')} {userSettings.sessionsUntilLongBreak}
-              </p>
+            {/* Time */}
+            <div className="text-4xl font-light text-gray-800 dark:text-white mb-2">
+              {formatTimeFromSeconds(timeLeft)}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {sessionTypeLabels[sessionType]}
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+              {t("sessionOf")} {sessionCount + 1} {t("of")}{" "}
+              {userSettings.sessionsUntilLongBreak}
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex gap-3 justify-center relative z-10">
               <button
                 onClick={handleReset}
-                className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                style={{ pointerEvents: "auto" }}
               >
-                <RotateCcw size={20} className="text-gray-600 dark:text-gray-400" />
+                <RotateCcw size={18} />
               </button>
-
               <button
                 onClick={isActive ? handlePause : handleStart}
-                className={`p-4 rounded-full bg-gradient-to-r ${sessionTypeColors[sessionType]} text-white hover:shadow-lg transition-all duration-200`}
+                className="p-3 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors cursor-pointer"
+                style={{ pointerEvents: "auto" }}
               >
-                {isActive ? <Pause size={24} /> : <Play size={24} />}
+                {isActive ? <Pause size={20} /> : <Play size={20} />}
               </button>
+              {isActive && startTimeRef.current && (
+                <button
+                  onClick={handleFinishEarly}
+                  className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/40 transition-colors cursor-pointer"
+                  title={t("finishEarly")}
+                  style={{ pointerEvents: "auto" }}
+                >
+                  <Square size={18} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -363,14 +500,16 @@ const Pomodoro: React.FC = () => {
         {/* Task Selection */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t('selectTask')}
+            {t("selectTask")}
           </h3>
           <select
             value={selectedTaskId}
             onChange={(e) => setSelectedTaskId(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option key="" value="">{t('noTaskSelected')}</option>
+            <option key="" value="">
+              {t("noTaskSelected")}
+            </option>
             {tasks
               .filter((t: any) => !t.completed)
               .map((task: any) => (
@@ -384,12 +523,12 @@ const Pomodoro: React.FC = () => {
         {/* Session Notes */}
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t('sessionNotes')}
+            {t("sessionNotes")}
           </h3>
           <textarea
             value={sessionNotes}
             onChange={(e) => setSessionNotes(e.target.value)}
-            placeholder={t('whatDidYouWorkOn')}
+            placeholder={t("whatDidYouWorkOn")}
             className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             rows={4}
           />
@@ -399,7 +538,7 @@ const Pomodoro: React.FC = () => {
       {/* Today's Progress */}
       <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t('todaysProgress')}
+          {t("todaysProgress")}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
@@ -407,7 +546,7 @@ const Pomodoro: React.FC = () => {
               {todayWorkSessions}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('workSessions')}
+              {t("workSessions")}
             </div>
           </div>
           <div className="text-center">
@@ -415,15 +554,15 @@ const Pomodoro: React.FC = () => {
               {minutesToHours(todayTotalTime)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('totalTime')}
+              {t("totalTime")}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+            <div className="text-3xl font-bold text-primary-600 dark:text-primary-400">
               {todaySessions.filter((s: any) => s.type === "BREAK").length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('breaksTaken')}
+              {t("breaksTaken")}
             </div>
           </div>
         </div>
@@ -432,7 +571,7 @@ const Pomodoro: React.FC = () => {
       {/* Recent Sessions */}
       <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t('recentSessions')}
+          {t("recentSessions")}
         </h3>
         <div className="space-y-3">
           {pomodoroSessions
@@ -453,12 +592,27 @@ const Pomodoro: React.FC = () => {
                         : "bg-blue-500"
                     }`}
                   />
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {sessionTypeLabels[session.type as keyof typeof sessionTypeLabels]}
+                      {
+                        sessionTypeLabels[
+                          session.type as keyof typeof sessionTypeLabels
+                        ]
+                      }
                     </p>
+                    {session.taskId && (
+                      <p className="text-sm text-blue-600 dark:text-blue-400">
+                        {tasks.find((t) => t.id === session.taskId)?.title ||
+                          "Unknown Task"}
+                      </p>
+                    )}
+                    {session.notes && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                        "{session.notes}"
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {dayjs(session.startTime).format('HH:mm')}
+                      {dayjs(session.startTime).format("HH:mm")}
                     </p>
                   </div>
                 </div>
@@ -472,7 +626,7 @@ const Pomodoro: React.FC = () => {
             ))}
           {pomodoroSessions.length === 0 && (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {t('noSessionsCompletedYet')}
+              {t("noSessionsCompletedYet")}
             </p>
           )}
         </div>
@@ -484,7 +638,7 @@ const Pomodoro: React.FC = () => {
           <div className="w-full max-w-3xl rounded-xl p-6 bg-white dark:bg-gray-800">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {t('pomodoroStatistics')}
+                {t("pomodoroStatistics")}
               </h3>
               <button
                 onClick={() => setStatsVisible(false)}
@@ -510,7 +664,7 @@ const Pomodoro: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  {t('today')}
+                  {t("today")}
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -518,41 +672,47 @@ const Pomodoro: React.FC = () => {
                       {todayWorkSessions}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       {t('workSessions')}
-                     </p>
+                      {t("workSessions")}
+                    </p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                       {minutesToHours(todayTotalTime)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       {t('totalTime')}
-                     </p>
+                      {t("totalTime")}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                   {t('allTime')}
-                 </h4>
+                  {t("allTime")}
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {pomodoroSessions.filter((s: any) => s.type === "WORK").length}
+                      {
+                        pomodoroSessions.filter((s: any) => s.type === "WORK")
+                          .length
+                      }
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('workSessions')}
+                      {t("workSessions")}
                     </p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                       {minutesToHours(
-                        pomodoroSessions.reduce((sum: number, s: any) => sum + s.duration, 0)
+                        pomodoroSessions.reduce(
+                          (sum: number, s: any) => sum + s.duration,
+                          0
+                        )
                       )}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('totalTime')}
+                      {t("totalTime")}
                     </p>
                   </div>
                 </div>
@@ -560,24 +720,31 @@ const Pomodoro: React.FC = () => {
 
               <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                   {t('breaks')}
-                 </h4>
+                  {t("breaks")}
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {pomodoroSessions.filter((s: any) => s.type === "BREAK").length}
+                      {
+                        pomodoroSessions.filter((s: any) => s.type === "BREAK")
+                          .length
+                      }
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       {t('shortBreaks')}
-                     </p>
+                      {t("shortBreaks")}
+                    </p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      {pomodoroSessions.filter((s: any) => s.type === "LONG_BREAK").length}
+                      {
+                        pomodoroSessions.filter(
+                          (s: any) => s.type === "LONG_BREAK"
+                        ).length
+                      }
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                       {t('longBreaks')}
-                     </p>
+                      {t("longBreaks")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -588,7 +755,7 @@ const Pomodoro: React.FC = () => {
                 onClick={() => setStatsVisible(false)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                {t('close')}
+                {t("close")}
               </button>
             </div>
           </div>
@@ -600,13 +767,13 @@ const Pomodoro: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {t('pomodoroSettings')}
+              {t("pomodoroSettings")}
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('workDuration')} (minutes)
+                  {t("workDuration")} (minutes)
                 </label>
                 <input
                   type="number"
@@ -622,7 +789,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('shortBreakDuration')} (minutes)
+                  {t("shortBreakDuration")} (minutes)
                 </label>
                 <input
                   type="number"
@@ -638,7 +805,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('longBreakDuration')} (minutes)
+                  {t("longBreakDuration")} (minutes)
                 </label>
                 <input
                   type="number"
@@ -654,7 +821,7 @@ const Pomodoro: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('sessionsUntilLongBreak')}
+                  {t("sessionsUntilLongBreak")}
                 </label>
                 <input
                   type="number"
@@ -674,8 +841,138 @@ const Pomodoro: React.FC = () => {
                 onClick={() => setShowSettings(false)}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                {t('close')}
+                {t("close")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session Completion Modal */}
+      {showCompletionModal && completedSessionData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="w-full max-w-md rounded-xl p-6 bg-white dark:bg-gray-800 relative">
+            {/* 右上角重置按钮 */}
+            <button
+              onClick={() => {
+                setShowCompletionModal(false);
+                setCompletedSessionData(null);
+                // Reset to work session
+                setSessionType("WORK");
+                setTimeLeft(
+                  userSettings?.workDuration
+                    ? userSettings.workDuration * 60
+                    : 25 * 60
+                );
+                setSessionNotes("");
+                startTimeRef.current = null;
+              }}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200"
+              title={t("reset")}
+            >
+              <RotateCcw size={20} />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">{t("tomatoIcon")}</div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {t("sessionCompleted")}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {t("sessionCompletedMessage")}
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                  {t("sessionSummary")}
+                </h4>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t("sessionType")}:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {
+                        sessionTypeLabels[
+                          completedSessionData.type as keyof typeof sessionTypeLabels
+                        ]
+                      }
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t("sessionDuration")}:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {completedSessionData.duration} {t("minutes")}
+                    </span>
+                  </div>
+
+                  {completedSessionData.taskTitle && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {t("taskWorkedOn")}:
+                      </span>
+                      <span className="font-medium text-blue-600 dark:text-blue-400">
+                        {completedSessionData.taskTitle}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t("sessionNotesLabel")}:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {completedSessionData.notes || t("noNotesAdded")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {completedSessionData.type === "WORK" ? (
+                // 工作会话：显示休息和开始下一个会话按钮
+                <>
+                  <button
+                    onClick={handleContinueAfterCompletion}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                  >
+                    {t("break")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCompletionModal(false);
+                      setCompletedSessionData(null);
+                      // Start next work session
+                      setSessionType("WORK");
+                      setTimeLeft(
+                        userSettings?.workDuration
+                          ? userSettings.workDuration * 60
+                          : 25 * 60
+                      );
+                      setSessionNotes("");
+                      startTimeRef.current = null;
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
+                  >
+                    {t("startNextSession")}
+                  </button>
+                </>
+              ) : (
+                // 休息会话：显示继续休息按钮
+                <button
+                  onClick={handleContinueAfterCompletion}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
+                >
+                  {t("continueToBreak")}
+                </button>
+              )}
             </div>
           </div>
         </div>

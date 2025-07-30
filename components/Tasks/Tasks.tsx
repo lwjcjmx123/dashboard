@@ -7,13 +7,14 @@ import {
   AlertCircle,
   Edit3,
 } from "lucide-react";
-import { useClientTasks } from "@/lib/client-data-hooks";
+import { useClientTasks, useClientPomodoroSessions } from "@/lib/client-data-hooks";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDate } from "@/utils/dateUtils";
 import dayjs from "dayjs";
 
 const Tasks: React.FC = () => {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useClientTasks();
+  const { sessions: pomodoroSessions } = useClientPomodoroSessions();
   const { t } = useLanguage();
   const [editingTask, setEditingTask] = useState<any>(null);
 
@@ -44,6 +45,13 @@ const Tasks: React.FC = () => {
     URGENT_NOT_IMPORTANT: t('urgent'),
     NOT_URGENT_IMPORTANT: t('important'),
     NOT_URGENT_NOT_IMPORTANT: t('lowPriority'),
+  };
+
+  // Function to get pomodoro count for a task
+  const getTaskPomodoroCount = (taskId: string) => {
+    return pomodoroSessions.filter(
+      (session: any) => session.taskId === taskId && session.type === "WORK" && session.completed
+    ).length;
   };
 
   const filteredTasks = tasks.filter((task: any) => {
@@ -272,6 +280,22 @@ const Tasks: React.FC = () => {
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {t('dueDate')}: {formatDate(new Date(task.dueDate), "24")}
                             </span>
+                          )}
+                          {getTaskPomodoroCount(task.id) > 0 && (
+                            <div className="flex items-center gap-1">
+                              <div className="flex">
+                                {Array.from({ length: Math.min(getTaskPomodoroCount(task.id), 5) }, (_, index) => (
+                                  <span key={index} className="text-red-500 text-sm">
+                                    {t('tomatoIcon')}
+                                  </span>
+                                ))}
+                                {getTaskPomodoroCount(task.id) > 5 && (
+                                  <span className="text-xs text-red-600 dark:text-red-400 font-medium ml-1">
+                                    +{getTaskPomodoroCount(task.id) - 5}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           )}
                           {task.tags && task.tags.length > 0 && (
                             <div className="flex gap-1">

@@ -8,6 +8,7 @@ interface DBSchema {
   expenses: any;
   notes: any;
   pomodoroSessions: any;
+  pomodoroCategories: any;
   userSettings: any;
   notifications: any;
 }
@@ -38,7 +39,7 @@ class IndexedDBAdapter {
         const db = (event.target as IDBOpenDBRequest).result;
         
         // Create object stores
-        const stores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'userSettings', 'notifications'];
+        const stores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'pomodoroCategories', 'userSettings', 'notifications'];
         
         stores.forEach(storeName => {
           try {
@@ -95,7 +96,7 @@ class IndexedDBAdapter {
       await this.init();
     }
     
-    const requiredStores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'userSettings', 'notifications'];
+    const requiredStores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'pomodoroCategories', 'userSettings', 'notifications'];
     const availableStores = Array.from(this.db!.objectStoreNames);
     
     const missingStores = requiredStores.filter(store => !availableStores.includes(store));

@@ -92,9 +92,19 @@ export interface Note {
   archived: boolean;
 }
 
+export interface PomodoroCategory {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface PomodoroSession {
   id: string;
   taskId?: string;
+  categoryId?: string;
   duration: number; // in minutes
   startTime: Date;
   endTime: Date;

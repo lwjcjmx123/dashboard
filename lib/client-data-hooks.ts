@@ -596,6 +596,134 @@ export const useClientPomodoroSessions = () => {
   }
 }
 
+export const useClientPomodoroCategories = () => {
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  const loadCategories = useCallback(async () => {
+    try {
+      setLoading(true)
+      const adapter = getDataAdapter()
+      let result = await adapter.pomodoroCategory.findMany()
+      
+      // If no categories exist, create default ones
+      if (!result || result.length === 0) {
+        const defaultCategories = [
+          {
+            name: '工作',
+            color: '#ef4444',
+            description: '工作相关的番茄钟'
+          },
+          {
+            name: '学习',
+            color: '#3b82f6',
+            description: '学习相关的番茄钟'
+          },
+          {
+            name: '运动',
+            color: '#10b981',
+            description: '运动健身相关的番茄钟'
+          },
+          {
+            name: '阅读',
+            color: '#8b5cf6',
+            description: '阅读相关的番茄钟'
+          }
+        ]
+        
+        for (const category of defaultCategories) {
+          await adapter.pomodoroCategory.create({
+            data: {
+              ...category,
+              userId: 'demo-user-id',
+              id: 'category_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          })
+        }
+        
+        // Reload categories after creating defaults
+        result = await adapter.pomodoroCategory.findMany()
+      }
+      
+      setCategories(result || [])
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+      console.error('Error loading pomodoro categories:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  const createCategory = useCallback(async (input: any) => {
+    try {
+      const adapter = getDataAdapter()
+      const newCategory = await adapter.pomodoroCategory.create({
+        data: {
+          ...input,
+          userId: 'demo-user-id',
+          id: 'category_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      })
+      await loadCategories() // Refresh the list
+      return newCategory
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadCategories])
+
+  const updateCategory = useCallback(async (input: any) => {
+    try {
+      const adapter = getDataAdapter()
+      const { id, ...updateData } = input
+      const updatedCategory = await adapter.pomodoroCategory.update({
+        where: { id },
+        data: {
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        }
+      })
+      await loadCategories() // Refresh the list
+      return updatedCategory
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadCategories])
+
+  const deleteCategory = useCallback(async (id: string) => {
+    try {
+      const adapter = getDataAdapter()
+      await adapter.pomodoroCategory.delete({ where: { id } })
+      await loadCategories() // Refresh the list
+      return true
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadCategories])
+
+  return {
+    categories,
+    loading,
+    error,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    refetch: loadCategories
+  }
+}
+
 export const useClientUserSettings = () => {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(true)

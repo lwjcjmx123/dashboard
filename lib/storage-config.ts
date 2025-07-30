@@ -21,13 +21,8 @@ const isDatabaseAvailable = () => {
 };
 
 export const storageConfig: StorageConfig = {
-  useDatabase: isDatabaseAvailable(),
-  databaseUrl: process.env.DATABASE_URL || process.env.MYSQL_URL,
+  useDatabase: false, // 强制使用 IndexedDB
+  databaseUrl: undefined,
 };
-
-// Environment variable to force IndexedDB usage (useful for testing)
-if (process.env.FORCE_INDEXEDDB === 'true') {
-  storageConfig.useDatabase = false;
-}
 
 // Storage configuration loaded
