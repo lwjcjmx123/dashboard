@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Home, 
   Calendar, 
@@ -21,7 +22,6 @@ type ViewType = 'dashboard' | 'calendar' | 'tasks' | 'finance' | 'notes' | 'pomo
 
 interface SidebarProps {
   currentView: ViewType
-  onViewChange: (view: ViewType) => void
 }
 
 const getNavigationItems = (t: (key: TranslationKey) => string) => [
@@ -35,9 +35,10 @@ const getNavigationItems = (t: (key: TranslationKey) => string) => [
   { id: 'settings', label: t('settings'), icon: Settings },
 ]
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView }) => {
   const { t } = useLanguage()
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
   
   const navigationItems = getNavigationItems(t)
 
@@ -66,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
           return (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id as ViewType)}
+              onClick={() => router.push(item.id === 'dashboard' ? '/' : `/${item.id}`)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
