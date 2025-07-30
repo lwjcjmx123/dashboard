@@ -50,6 +50,13 @@ interface DataAdapter {
     findUnique: (options: any) => Promise<any>;
     upsert: (options: any) => Promise<any>;
   };
+  notification: {
+    findMany: (options?: any) => Promise<any[]>;
+    create: (options: any) => Promise<any>;
+    update: (options: any) => Promise<any>;
+    delete: (options: any) => Promise<any>;
+    markAsRead: (id: string) => Promise<any>;
+  };
 }
 
 // IndexedDB adapter implementation
@@ -204,6 +211,29 @@ class IndexedDBDataAdapter implements DataAdapter {
     upsert: async (options: any) => {
       const adapter = await this.getAdapter();
       return adapter.upsert('userSettings', options);
+    },
+  };
+
+  notification = {
+    findMany: async (options?: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.findMany('notifications', options);
+    },
+    create: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.create('notifications', options);
+    },
+    update: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.update('notifications', options);
+    },
+    delete: async (options: any) => {
+      const adapter = await this.getAdapter();
+      return adapter.delete('notifications', options.where);
+    },
+    markAsRead: async (id: string) => {
+      const adapter = await this.getAdapter();
+      return adapter.update('notifications', { where: { id }, data: { read: true } });
     },
   };
 }
@@ -403,6 +433,70 @@ class NoOpDataAdapter implements DataAdapter {
     update: async () => this.generateMockUserSettings(),
     upsert: async () => this.generateMockUserSettings(),
   };
+
+  private generateMockNotification() {
+    return {
+      id: 'mock-notification-id',
+      title: '任务提醒',
+      message: '您有3个任务即将到期',
+      type: 'TASK_DUE',
+      read: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      taskId: null,
+      eventId: null,
+      billId: null,
+      userId: 'mock-user-id'
+    };
+  }
+
+  notification = {
+    findMany: async () => [
+      {
+        id: '1',
+        title: '任务提醒',
+        message: '您有3个任务即将到期',
+        type: 'TASK_DUE',
+        read: false,
+        createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        taskId: null,
+        eventId: null,
+        billId: null,
+        userId: 'mock-user-id'
+      },
+      {
+        id: '2',
+        title: '账单提醒',
+        message: '电费账单将于明天到期',
+        type: 'BILL_DUE',
+        read: false,
+        createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        taskId: null,
+        eventId: null,
+        billId: null,
+        userId: 'mock-user-id'
+      },
+      {
+        id: '3',
+        title: '番茄钟完成',
+        message: '恭喜完成25分钟专注时间',
+        type: 'POMODORO_COMPLETE',
+        read: true,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        taskId: null,
+        eventId: null,
+        billId: null,
+        userId: 'mock-user-id'
+      }
+    ],
+    create: async () => this.generateMockNotification(),
+    update: async () => this.generateMockNotification(),
+    delete: async () => this.generateMockNotification(),
+    markAsRead: async () => ({ ...this.generateMockNotification(), read: true }),
+  };
 }
 
 // Prisma adapter implementation (wrapper around existing prisma client)
@@ -420,7 +514,6 @@ class PrismaDataAdapter implements DataAdapter {
         }
         this.prisma = prisma;
       } catch (error) {
-        console.warn('Prisma not available, falling back to IndexedDB');
         throw new Error('Prisma not available');
       }
     } else {
@@ -481,6 +574,14 @@ class PrismaDataAdapter implements DataAdapter {
     findUnique: (options: any) => this.prisma.userSettings.findUnique(options),
     upsert: (options: any) => this.prisma.userSettings.upsert(options),
   };
+
+  notification = {
+    findMany: (options?: any) => this.prisma.notification.findMany(options),
+    create: (options: any) => this.prisma.notification.create(options),
+    update: (options: any) => this.prisma.notification.update(options),
+    delete: (options: any) => this.prisma.notification.delete(options),
+    markAsRead: (id: string) => this.prisma.notification.update({ where: { id }, data: { read: true } }),
+  };
 }
 
 // Factory function to get the appropriate data adapter
@@ -499,26 +600,22 @@ export const getDataAdapter = (): DataAdapter => {
   }
 
   try {
-    if (storageConfig.useDatabase && isServer) {
+    if (storageConfig.useDatabase) {
       // Server-side with database
       serverDataAdapterInstance = new PrismaDataAdapter();
-      console.log('Using Prisma data adapter');
       return serverDataAdapterInstance;
     } else if (!isServer) {
       // Client-side - use IndexedDB
       clientDataAdapterInstance = new IndexedDBDataAdapter();
-      console.log('Using IndexedDB data adapter');
       return clientDataAdapterInstance;
     } else {
       // Server-side without database - use no-op adapter
       serverDataAdapterInstance = new NoOpDataAdapter();
-      console.log('Using No-op data adapter (server-side without database)');
       return serverDataAdapterInstance;
     }
   } catch (error) {
     if (!isServer) {
       // Client-side fallback to IndexedDB
-      console.warn('Falling back to IndexedDB:', error);
       clientDataAdapterInstance = new IndexedDBDataAdapter();
       return clientDataAdapterInstance;
     } else {

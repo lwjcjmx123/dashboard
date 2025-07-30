@@ -370,7 +370,7 @@ const Pomodoro: React.FC = () => {
             onChange={(e) => setSelectedTaskId(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">No task selected</option>
+            <option key="" value="">No task selected</option>
             {tasks
               .filter((t: any) => !t.completed)
               .map((task: any) => (

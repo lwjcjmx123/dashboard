@@ -23,6 +23,7 @@ model User {
   expenses         Expense[]
   notes            Note[]
   pomodoroSessions PomodoroSession[]
+  notifications    Notification[]
   settings         UserSettings?
 
   @@map("users")
@@ -246,4 +247,35 @@ enum SessionType {
   WORK
   BREAK
   LONG_BREAK
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType
+  read      Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  
+  // Optional reference to related entities
+  taskId    String?
+  eventId   String?
+  billId    String?
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  TASK_DUE
+  TASK_OVERDUE
+  BILL_DUE
+  BILL_OVERDUE
+  EVENT_REMINDER
+  POMODORO_COMPLETE
+  POMODORO_BREAK
+  GENERAL
 }

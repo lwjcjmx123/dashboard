@@ -1,7 +1,5 @@
 'use client'
 
-import { ApolloProvider } from '@apollo/client'
-import { apolloClient } from '@/lib/apollo-client'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import './globals.css'
@@ -21,13 +19,11 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
-        <ApolloProvider client={apolloClient}>
-          <LanguageProvider>
-            <ThemeProvider>
-              {children}
-            </ThemeProvider>
-          </LanguageProvider>
-        </ApolloProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   )

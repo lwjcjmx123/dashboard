@@ -9,11 +9,12 @@ interface DBSchema {
   notes: any;
   pomodoroSessions: any;
   userSettings: any;
+  notifications: any;
 }
 
 class IndexedDBAdapter {
   private dbName = 'dashboard-app';
-  private version = 1;
+  private version = 2; // Increased version to force upgrade
   private db: IDBDatabase | null = null;
 
   async init(): Promise<void> {
@@ -24,7 +25,10 @@ class IndexedDBAdapter {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        reject(request.error);
+      };
+      
       request.onsuccess = () => {
         this.db = request.result;
         resolve();
@@ -34,38 +38,70 @@ class IndexedDBAdapter {
         const db = (event.target as IDBOpenDBRequest).result;
         
         // Create object stores
-        const stores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'userSettings'];
+        const stores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'userSettings', 'notifications'];
         
         stores.forEach(storeName => {
-          if (!db.objectStoreNames.contains(storeName)) {
-            const store = db.createObjectStore(storeName, { keyPath: 'id' });
-            
-            // Create indexes for common queries
-            if (storeName !== 'users' && storeName !== 'userSettings') {
-              store.createIndex('userId', 'userId', { unique: false });
+          try {
+            if (!db.objectStoreNames.contains(storeName)) {
+              const store = db.createObjectStore(storeName, { keyPath: 'id' });
+              
+              // Create indexes for common queries
+              if (storeName !== 'users' && storeName !== 'userSettings') {
+                store.createIndex('userId', 'userId', { unique: false });
+              }
+              if (storeName === 'tasks') {
+                store.createIndex('completed', 'completed', { unique: false });
+                store.createIndex('dueDate', 'dueDate', { unique: false });
+              }
+              if (storeName === 'events') {
+                store.createIndex('startDate', 'startDate', { unique: false });
+              }
+              if (storeName === 'bills') {
+                store.createIndex('dueDate', 'dueDate', { unique: false });
+              }
+              if (storeName === 'notifications') {
+                store.createIndex('read', 'read', { unique: false });
+                store.createIndex('createdAt', 'createdAt', { unique: false });
+              }
             }
-            if (storeName === 'tasks') {
-              store.createIndex('completed', 'completed', { unique: false });
-              store.createIndex('dueDate', 'dueDate', { unique: false });
-            }
-            if (storeName === 'events') {
-              store.createIndex('startDate', 'startDate', { unique: false });
-            }
-            if (storeName === 'bills') {
-              store.createIndex('dueDate', 'dueDate', { unique: false });
-            }
+          } catch (error) {
+            // Silent error handling
           }
         });
       };
     });
   }
 
-  private async getStore(storeName: string, mode: IDBTransactionMode = 'readonly'): Promise<IDBObjectStore> {
+  private async getTransaction(storeName: string, mode: IDBTransactionMode = 'readonly'): Promise<IDBObjectStore> {
     if (!this.db) {
       await this.init();
     }
-    const transaction = this.db!.transaction([storeName], mode);
-    return transaction.objectStore(storeName);
+    
+    // Verify the object store exists
+    if (!this.db!.objectStoreNames.contains(storeName)) {
+      throw new Error(`Object store '${storeName}' not found`);
+    }
+    
+    try {
+      const transaction = this.db!.transaction([storeName], mode);
+      return transaction.objectStore(storeName);
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+  async verifyDatabase(): Promise<void> {
+    if (!this.db) {
+      await this.init();
+    }
+    
+    const requiredStores = ['users', 'tasks', 'events', 'bills', 'expenses', 'notes', 'pomodoroSessions', 'userSettings', 'notifications'];
+    const availableStores = Array.from(this.db!.objectStoreNames);
+    
+    const missingStores = requiredStores.filter(store => !availableStores.includes(store));
+    if (missingStores.length > 0) {
+      throw new Error(`Missing object stores: ${missingStores.join(', ')}`);
+    }
   }
 
   private generateId(): string {
@@ -74,7 +110,7 @@ class IndexedDBAdapter {
 
   // Generic CRUD operations
   async findUnique<T>(storeName: string, where: any): Promise<T | null> {
-    const store = await this.getStore(storeName);
+    const store = await this.getTransaction(storeName);
     
     // Special handling for userSettings which queries by userId
     if (storeName === 'userSettings' && where.userId) {
@@ -102,7 +138,7 @@ class IndexedDBAdapter {
     orderBy?: any;
     include?: any;
   }): Promise<T[]> {
-    const store = await this.getStore(storeName);
+    const store = await this.getTransaction(storeName);
     return new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => {
@@ -137,7 +173,7 @@ class IndexedDBAdapter {
   }
 
   async create<T>(storeName: string, data: { data: any }): Promise<T> {
-    const store = await this.getStore(storeName, 'readwrite');
+    const store = await this.getTransaction(storeName, 'readwrite');
     const item = {
       ...data.data,
       id: data.data.id || this.generateId(),
@@ -153,7 +189,7 @@ class IndexedDBAdapter {
   }
 
   async update<T>(storeName: string, options: { where: { id: string }; data: any }): Promise<T> {
-    const store = await this.getStore(storeName, 'readwrite');
+    const store = await this.getTransaction(storeName, 'readwrite');
     
     return new Promise(async (resolve, reject) => {
       // First get the existing item
@@ -180,7 +216,7 @@ class IndexedDBAdapter {
   }
 
   async delete(storeName: string, where: { id: string }): Promise<any> {
-    const store = await this.getStore(storeName, 'readwrite');
+    const store = await this.getTransaction(storeName, 'readwrite');
     return new Promise((resolve, reject) => {
       const request = store.delete(where.id);
       request.onsuccess = () => resolve({ id: where.id });

@@ -131,6 +131,44 @@ async function main() {
     ],
   })
 
+  // Create sample notifications
+  await prisma.notification.createMany({
+    data: [
+      {
+        title: '任务提醒',
+        message: '您有3个任务即将到期',
+        type: 'TASK_DUE',
+        read: false,
+        userId: user.id,
+        createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+      },
+      {
+        title: '账单提醒',
+        message: '电费账单将于明天到期',
+        type: 'BILL_DUE',
+        read: false,
+        userId: user.id,
+        createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+      },
+      {
+        title: '番茄钟完成',
+        message: '恭喜完成25分钟专注时间',
+        type: 'POMODORO_COMPLETE',
+        read: true,
+        userId: user.id,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+      {
+        title: '事件提醒',
+        message: '团队会议将在30分钟后开始',
+        type: 'EVENT_REMINDER',
+        read: false,
+        userId: user.id,
+        createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+      },
+    ],
+  })
+
   console.log('Database seeded successfully!')
 }
 

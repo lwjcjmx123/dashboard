@@ -30,7 +30,4 @@ if (process.env.FORCE_INDEXEDDB === 'true') {
   storageConfig.useDatabase = false;
 }
 
-console.log('Storage configuration:', {
-  useDatabase: storageConfig.useDatabase,
-  hasDbUrl: !!storageConfig.databaseUrl,
-});
+// Storage configuration loaded

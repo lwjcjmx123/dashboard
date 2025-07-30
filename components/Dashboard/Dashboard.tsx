@@ -1,104 +1,123 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { CheckSquare, DollarSign, FileText, Timer, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
-import { useClientTasks, useClientBills, useClientNotes, useClientPomodoroSessions, useClientUserSettings } from '@/lib/client-data-hooks'
-import { isThisWeek, formatDate, formatTime } from '../../utils/dateUtils'
-import { useLanguage } from '@/contexts/LanguageContext'
-import dayjs from 'dayjs'
+import React from "react";
+import {
+  CheckSquare,
+  DollarSign,
+  FileText,
+  Timer,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+import {
+  useClientTasks,
+  useClientBills,
+  useClientNotes,
+  useClientPomodoroSessions,
+  useClientUserSettings,
+} from "@/lib/client-data-hooks";
+import { isThisWeek, formatDate, formatTime } from "../../utils/dateUtils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import dayjs from "dayjs";
+import { seedTestData, clearTestData } from "@/lib/test-data-seeder";
 
 interface DashboardProps {
-  onNavigate: (view: string) => void
+  onNavigate: (view: string) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { t } = useLanguage()
-  const { tasks } = useClientTasks()
-  const { bills } = useClientBills()
-  const { notes } = useClientNotes()
-  const { sessions: pomodoroSessions } = useClientPomodoroSessions()
-  const { settings } = useClientUserSettings()
+  const { t } = useLanguage();
+  const { tasks, refetch: refetchTasks } = useClientTasks();
+  const { bills, refetch: refetchBills } = useClientBills();
+  const { notes } = useClientNotes();
+  const { sessions: pomodoroSessions } = useClientPomodoroSessions();
+  const { settings } = useClientUserSettings();
 
   // Currency symbol mapping
   const getCurrencySymbol = (currency: string) => {
     const symbols: { [key: string]: string } = {
-      'CNY': '¥',
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥'
+      CNY: "¥",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      JPY: "¥",
     };
-    return symbols[currency] || '$';
+    return symbols[currency] || "$";
   };
 
-  const currencySymbol = settings ? getCurrencySymbol(settings.currency) : '$';
+  const currencySymbol = settings ? getCurrencySymbol(settings.currency) : "$";
 
   // Calculate today's data
-  const todayTasks = tasks.filter((task: any) => 
-    task.dueDate && dayjs(task.dueDate).isSame(dayjs(), 'day')
-  )
-  const completedTasks = tasks.filter((task: any) => task.completed).length
-  const totalTasks = tasks.length
-  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const todayTasks = tasks.filter(
+    (task: any) => task.dueDate && dayjs(task.dueDate).isSame(dayjs(), "day")
+  );
+  const completedTasks = tasks.filter((task: any) => task.completed).length;
+  const totalTasks = tasks.length;
+  const taskCompletionRate =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const upcomingBills = bills.filter((bill: any) => 
-    !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, 'day'))
-  ).slice(0, 5)
+  const upcomingBills = bills
+    .filter(
+      (bill: any) =>
+        !bill.paid && dayjs(bill.dueDate).isBefore(dayjs().add(7, "day"))
+    )
+    .slice(0, 5);
 
-  const recentNotes = notes.slice(-5).reverse()
+  const recentNotes = notes.slice(-5).reverse();
 
-  const weeklyPomodoroSessions = pomodoroSessions.filter((session: any) => 
+  const weeklyPomodoroSessions = pomodoroSessions.filter((session: any) =>
     isThisWeek(new Date(session.startTime))
-  ).length
+  ).length;
 
   const stats = [
     {
-      label: t('tasksCompleted'),
+      label: t("tasksCompleted"),
       value: `${completedTasks}/${totalTasks}`,
       percentage: taskCompletionRate,
       icon: CheckSquare,
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-900/20',
-      onClick: () => onNavigate('tasks'),
+      color: "text-green-600 dark:text-green-400",
+      bgColor: "bg-green-50 dark:bg-green-900/20",
+      onClick: () => onNavigate("tasks"),
     },
     {
-      label: t('upcomingBills'),
+      label: t("upcomingBills"),
       value: upcomingBills.length,
       percentage: null,
       icon: DollarSign,
-      color: 'text-red-600 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-900/20',
-      onClick: () => onNavigate('finance'),
+      color: "text-red-600 dark:text-red-400",
+      bgColor: "bg-red-50 dark:bg-red-900/20",
+      onClick: () => onNavigate("finance"),
     },
     {
-      label: t('notesCreated'),
+      label: t("notesCreated"),
       value: notes.length,
       percentage: null,
       icon: FileText,
-      color: 'text-primary-600 dark:text-primary-400',
-      bgColor: 'bg-primary-50 dark:bg-primary-900/20',
-      onClick: () => onNavigate('notes'),
+      color: "text-primary-600 dark:text-primary-400",
+      bgColor: "bg-primary-50 dark:bg-primary-900/20",
+      onClick: () => onNavigate("notes"),
     },
     {
-      label: t('pomodoroSessions'),
+      label: t("pomodoroSessions"),
       value: weeklyPomodoroSessions,
       percentage: null,
       icon: Timer,
-      color: 'text-purple-600 dark:text-purple-400',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      onClick: () => onNavigate('pomodoro'),
+      color: "text-purple-600 dark:text-purple-400",
+      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      onClick: () => onNavigate("pomodoro"),
     },
-  ]
+  ];
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {t('goodMorning')} 👋
+            {t("goodMorning")} 👋
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {t('happeningToday')}
+            {t("happeningToday")}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -110,7 +129,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {stats.map((stat) => {
-          const Icon = stat.icon
+          const Icon = stat.icon;
           return (
             <div
               key={stat.label}
@@ -124,7 +143,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 {stat.percentage !== null && (
                   <div className="flex items-center gap-1 text-sm">
                     <TrendingUp size={16} className="text-green-500" />
-                    <span className="text-green-500 font-medium">{stat.percentage}%</span>
+                    <span className="text-green-500 font-medium">
+                      {stat.percentage}%
+                    </span>
                   </div>
                 )}
               </div>
@@ -137,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </p>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -147,14 +168,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('todayTasks')}
+              {t("todayTasks")}
             </h3>
             <CheckSquare className="text-primary-500" size={20} />
           </div>
           <div className="space-y-3">
             {todayTasks.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                {t('noTasksToday')}
+                {t("noTasksToday")}
               </p>
             ) : (
               todayTasks.slice(0, 5).map((task: any) => (
@@ -169,25 +190,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     readOnly
                   />
                   <div className="flex-1">
-                    <p className={`font-medium ${
-                      task.completed 
-                        ? 'line-through text-gray-500 dark:text-gray-400' 
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
+                    <p
+                      className={`font-medium ${
+                        task.completed
+                          ? "line-through text-gray-500 dark:text-gray-400"
+                          : "text-gray-900 dark:text-white"
+                      }`}
+                    >
                       {task.title}
                     </p>
                     {task.dueDate && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('dueDate')}: {formatTime(new Date(task.dueDate))}
+                        {t("dueDate")}: {formatTime(new Date(task.dueDate))}
                       </p>
                     )}
                   </div>
-                  <div className={`w-2 h-2 rounded-full ${
-                    task.priority === 'URGENT_IMPORTANT' ? 'bg-red-500' :
-                    task.priority === 'URGENT_NOT_IMPORTANT' ? 'bg-yellow-500' :
-                    task.priority === 'NOT_URGENT_IMPORTANT' ? 'bg-primary-500' :
-                    'bg-gray-500'
-                  }`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      task.priority === "URGENT_IMPORTANT"
+                        ? "bg-red-500"
+                        : task.priority === "URGENT_NOT_IMPORTANT"
+                        ? "bg-yellow-500"
+                        : task.priority === "NOT_URGENT_IMPORTANT"
+                        ? "bg-primary-500"
+                        : "bg-gray-500"
+                    }`}
+                  />
                 </div>
               ))
             )}
@@ -198,14 +226,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('upcomingBills')}
+              {t("upcomingBills")}
             </h3>
             <AlertCircle className="text-red-500" size={20} />
           </div>
           <div className="space-y-3">
             {upcomingBills.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                {t('noTasksToday')}
+                {t("noTasksToday")}
               </p>
             ) : (
               upcomingBills.map((bill: any) => (
@@ -218,12 +246,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       {bill.title}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('dueDate')}: {formatDate(new Date(bill.dueDate))}
+                      {t("dueDate")}: {formatDate(new Date(bill.dueDate))}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-red-600 dark:text-red-400">
-                      {currencySymbol}{bill.amount.toFixed(2)}
+                      {currencySymbol}
+                      {bill.amount.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {bill.currency}
@@ -239,14 +268,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="p-6 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all duration-200 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {t('recentNotes')}
+              {t("recentNotes")}
             </h3>
             <FileText className="text-purple-500" size={20} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {recentNotes.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8 col-span-2">
-                {t('noRecentNotes')}
+                {t("noRecentNotes")}
               </p>
             ) : (
               recentNotes.map((note: any) => (
@@ -270,7 +299,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;

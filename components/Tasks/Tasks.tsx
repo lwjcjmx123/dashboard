@@ -182,11 +182,11 @@ const Tasks: React.FC = () => {
           onChange={(e) => setFilterPriority(e.target.value)}
           className="px-4 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="all">{t('all')}</option>
-          <option value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
-          <option value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
-          <option value="NOT_URGENT_IMPORTANT">{t('important')}</option>
-          <option value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
+          <option key="all" value="all">{t('all')}</option>
+          <option key="URGENT_IMPORTANT" value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
+          <option key="URGENT_NOT_IMPORTANT" value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
+          <option key="NOT_URGENT_IMPORTANT" value="NOT_URGENT_IMPORTANT">{t('important')}</option>
+          <option key="NOT_URGENT_NOT_IMPORTANT" value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
         </select>
 
         <label className="flex items-center gap-2">
@@ -372,10 +372,10 @@ const Tasks: React.FC = () => {
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
-                  <option value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
-                  <option value="NOT_URGENT_IMPORTANT">{t('important')}</option>
-                  <option value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
+                  <option key="URGENT_IMPORTANT" value="URGENT_IMPORTANT">{t('urgentImportant')}</option>
+                  <option key="URGENT_NOT_IMPORTANT" value="URGENT_NOT_IMPORTANT">{t('urgent')}</option>
+                  <option key="NOT_URGENT_IMPORTANT" value="NOT_URGENT_IMPORTANT">{t('important')}</option>
+                  <option key="NOT_URGENT_NOT_IMPORTANT" value="NOT_URGENT_NOT_IMPORTANT">{t('lowPriority')}</option>
                 </select>
               </div>
 
@@ -467,10 +467,10 @@ const Tasks: React.FC = () => {
                   }
                   className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  <option value="URGENT_IMPORTANT">Urgent & Important</option>
-                  <option value="URGENT_NOT_IMPORTANT">Urgent</option>
-                  <option value="NOT_URGENT_IMPORTANT">Important</option>
-                  <option value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
+                  <option key="URGENT_IMPORTANT" value="URGENT_IMPORTANT">Urgent & Important</option>
+                  <option key="URGENT_NOT_IMPORTANT" value="URGENT_NOT_IMPORTANT">Urgent</option>
+                  <option key="NOT_URGENT_IMPORTANT" value="NOT_URGENT_IMPORTANT">Important</option>
+                  <option key="NOT_URGENT_NOT_IMPORTANT" value="NOT_URGENT_NOT_IMPORTANT">Low Priority</option>
                 </select>
               </div>
 

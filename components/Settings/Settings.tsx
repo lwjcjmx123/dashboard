@@ -170,7 +170,7 @@ const Settings: React.FC = () => {
       ],
     },
     {
-      title: t("notifications"),
+      title: t("notificationSettings"),
       icon: Bell,
       settings: [
         {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getDataAdapter } from './data-adapter'
+import { notificationService } from './notification-service'
 
 // Client-side data hooks that use IndexedDB directly
 
@@ -420,6 +421,128 @@ export const useClientEvents = () => {
   }
 }
 
+export const useClientNotifications = () => {
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [isClient, setIsClient] = useState(false)
+  const [hideRead, setHideRead] = useState(true) // 默认隐藏已读通知
+
+  const loadNotifications = useCallback(async (hideReadNotifications: boolean = hideRead) => {
+    if (!isClient) return
+    
+    try {
+      setLoading(true)
+      
+      // First, generate any new notifications
+      await notificationService.triggerNotificationCheck('demo-user-id')
+      
+      // Then load notifications using the new service method
+      const result = await notificationService.getNotifications('demo-user-id', hideReadNotifications)
+      setNotifications(result || [])
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [isClient, hideRead])
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  
+  useEffect(() => {
+    if (isClient) {
+      loadNotifications()
+    }
+  }, [isClient, loadNotifications])
+
+  const markAsRead = useCallback(async (id: string) => {
+    try {
+      await notificationService.markNotificationAsRead(id)
+      await loadNotifications() // Refresh the list
+      return true
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadNotifications])
+
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationService.markAllNotificationsAsRead('demo-user-id')
+      await loadNotifications() // Refresh the list
+      return true
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadNotifications])
+
+  const toggleHideRead = useCallback(async (hide: boolean) => {
+    setHideRead(hide)
+    await loadNotifications(hide)
+  }, [loadNotifications])
+
+  const createNotification = useCallback(async (input: any) => {
+    try {
+      const adapter = getDataAdapter()
+      const newNotification = await adapter.notification.create({
+        data: {
+          ...input,
+          userId: 'demo-user-id',
+          id: 'notification_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
+          read: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      })
+      await loadNotifications() // Refresh the list
+      return newNotification
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadNotifications])
+
+  const deleteNotification = useCallback(async (id: string) => {
+    try {
+      await notificationService.deleteNotification(id)
+      await loadNotifications() // Refresh the list
+      return true
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadNotifications])
+
+  const deleteReadNotifications = useCallback(async () => {
+    try {
+      await notificationService.deleteReadNotifications('demo-user-id')
+      await loadNotifications() // Refresh the list
+      return true
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    }
+  }, [loadNotifications])
+
+  return {
+    notifications,
+    loading,
+    error,
+    hideRead,
+    markAsRead,
+    markAllAsRead,
+    toggleHideRead,
+    createNotification,
+    deleteNotification,
+    deleteReadNotifications,
+    refetch: loadNotifications
+  }
+}
+
 export const useClientPomodoroSessions = () => {
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -481,17 +604,13 @@ export const useClientUserSettings = () => {
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
-      console.log('Loading user settings...')
       const adapter = getDataAdapter()
-      console.log('Data adapter:', adapter.constructor.name)
       let result = await adapter.userSettings.findUnique({
         where: { userId: 'demo-user-id' }
       })
-      console.log('Settings result:', result)
       
       // If no settings found, create default settings
       if (!result) {
-        console.log('No settings found, creating default settings...')
         const defaultSettings = {
           userId: 'demo-user-id',
           theme: 'light',
@@ -513,14 +632,12 @@ export const useClientUserSettings = () => {
           update: defaultSettings,
           create: defaultSettings
         })
-        console.log('Created default settings:', result)
       }
       
       setSettings(result)
       setError(null)
     } catch (err) {
       setError(err as Error)
-      console.error('Error loading user settings:', err)
     } finally {
       setLoading(false)
     }

@@ -13,9 +13,6 @@ import {
   Moon,
   Sun
 } from 'lucide-react'
-import { useMutation } from '@apollo/client'
-import { UPDATE_USER_SETTINGS } from '@/lib/graphql/mutations'
-import { GET_ME } from '@/lib/graphql/queries'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { TranslationKey } from '@/lib/i18n'

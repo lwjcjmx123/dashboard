@@ -59,7 +59,7 @@ export const translations = {
     defaultCurrencyDescription: '设置您偏好的财务跟踪货币',
     
     // 通知设置
-    notifications: '通知',
+    notificationSettings: '通知',
     taskNotifications: '任务通知',
     taskNotificationsDescription: '获取任务截止日期和提醒通知',
     billNotifications: '账单通知',
@@ -172,6 +172,16 @@ export const translations = {
     noteContent: '笔记内容',
     loadingNotes: '加载笔记中...',
     errorLoadingNotes: '加载笔记时出错',
+    allTags: '所有标签',
+    showArchived: '显示已归档',
+    noNotesFound: '未找到笔记',
+    noContent: '无内容',
+    lastUpdated: '最后更新：',
+    addATag: '添加标签',
+    archived: '已归档',
+    thisNoteIsEmpty: '此笔记为空。点击编辑添加内容。',
+    selectANoteToView: '选择一个笔记查看',
+    chooseANoteFromSidebar: '从侧边栏选择一个笔记或创建一个新笔记',
 
     // 番茄钟
     sessionNotes: '会话笔记',
@@ -237,7 +247,12 @@ export const translations = {
     mostProductiveDay: '最高效的一天',
     monday: '周一',
     overdueTasks: '逾期任务',
-    analyticsUpcomingBills: '即将到期账单'
+    analyticsUpcomingBills: '即将到期账单',
+    
+    // 通知
+     notifications: '通知',
+     noNotifications: '暂无通知',
+     viewAllNotifications: '查看所有通知'
   },
   en: {
     // Common
@@ -298,8 +313,8 @@ export const translations = {
     defaultCurrency: 'Default Currency',
     defaultCurrencyDescription: 'Set your preferred currency for financial tracking',
     
-    // Notification settings
-    notifications: 'Notifications',
+    // Notification Settings
+    notificationSettings: 'Notifications',
     taskNotifications: 'Task Notifications',
     taskNotificationsDescription: 'Get notified about task deadlines and reminders',
     billNotifications: 'Bill Notifications',
@@ -412,6 +427,16 @@ export const translations = {
     noteContent: 'Note Content',
     loadingNotes: 'Loading notes...',
     errorLoadingNotes: 'Error loading notes',
+    allTags: 'All Tags',
+    showArchived: 'Show archived',
+    noNotesFound: 'No notes found',
+    noContent: 'No content',
+    lastUpdated: 'Last updated:',
+    addATag: 'Add a tag',
+    archived: 'Archived',
+    thisNoteIsEmpty: 'This note is empty. Click Edit to add content.',
+    selectANoteToView: 'Select a note to view',
+    chooseANoteFromSidebar: 'Choose a note from the sidebar or create a new one',
 
     // Pomodoro
     sessionNotes: 'Session Notes',
@@ -477,7 +502,12 @@ export const translations = {
     mostProductiveDay: 'Most productive day',
     monday: 'Monday',
     overdueTasks: 'Overdue tasks',
-    analyticsUpcomingBills: 'Upcoming bills'
+    analyticsUpcomingBills: 'Upcoming bills',
+    
+    // Notifications
+     notifications: 'Notifications',
+     noNotifications: 'No notifications',
+     viewAllNotifications: 'View all notifications'
   }
 };
 
