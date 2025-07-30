@@ -4,22 +4,18 @@ A comprehensive dashboard for personal productivity management built with Next.j
 
 ## 🚀 Deployment Options
 
-This application supports two storage modes:
+This application uses IndexedDB for client-side data storage:
 
-### 1. Database Mode (MySQL/PostgreSQL)
-For production environments with a database:
-- Set `DATABASE_URL` or `MYSQL_URL` environment variable
-- The app will automatically use Prisma with your database
+### IndexedDB Mode (Browser Storage)
 
-### 2. IndexedDB Mode (Browser Storage)
-For serverless deployments (like Vercel) without a database:
 - No database configuration needed
 - Data is stored locally in the browser using IndexedDB
-- Perfect for personal use or demo purposes
+- Perfect for personal use and serverless deployments
+- Works seamlessly with Vercel, Netlify, and other static hosting platforms
 
 ## 📦 Quick Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/dashboard-1)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/dashboard)
 
 1. Click the deploy button above
 2. No environment variables needed for IndexedDB mode
@@ -28,7 +24,8 @@ For serverless deployments (like Vercel) without a database:
 ## 🛠️ Local Development
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
 
 ### Installation
@@ -36,7 +33,7 @@ For serverless deployments (like Vercel) without a database:
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd dashboard-1
+cd dashboard
 
 # Install dependencies
 npm install
@@ -47,29 +44,26 @@ npm run dev
 
 ### Environment Configuration
 
-Copy `.env.example` to `.env.local`:
+No environment configuration is required for basic usage. The app automatically uses IndexedDB for data storage.
+
+Optionally, you can create `.env.local` for development:
 
 ```bash
 cp .env.example .env.local
 ```
 
-#### For Database Mode:
 ```env
-DATABASE_URL="mysql://username:password@host:port/database"
-```
-
-#### For IndexedDB Mode:
-```env
+# Optional: Force IndexedDB mode (enabled by default)
 FORCE_INDEXEDDB=true
 ```
 
-## 🗄️ Storage Configuration
+## 🗄️ Data Storage
 
-The app automatically detects the storage mode:
+The app uses IndexedDB for client-side data storage:
 
-- **Has `DATABASE_URL`** → Uses database with Prisma
-- **No `DATABASE_URL`** → Uses IndexedDB in browser
-- **`FORCE_INDEXEDDB=true`** → Forces IndexedDB mode
+- **Automatic Setup** → No configuration required
+- **Browser Storage** → Data persists in your browser
+- **Privacy Focused** → Your data stays on your device
 
 ## 📱 Features
 
@@ -85,23 +79,19 @@ The app automatically detects the storage mode:
 
 - **Frontend**: Next.js 14, React, TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: Prisma (MySQL/PostgreSQL) or IndexedDB
+- **Storage**: IndexedDB (Browser Storage)
 - **GraphQL**: Apollo Client/Server
 - **Deployment**: Vercel-ready
 
 ## 📊 Data Storage
 
-### Database Mode
-- Full relational database support
-- Data persistence across devices
-- Multi-user support ready
-- Backup and migration capabilities
+### IndexedDB Storage
 
-### IndexedDB Mode
-- Client-side storage
-- No server requirements
-- Perfect for personal use
-- Data stays in your browser
+- Client-side storage in your browser
+- No server or database requirements
+- Perfect for personal productivity management
+- Data privacy - everything stays on your device
+- Export/import functionality for data backup
 
 ## 🚀 Deployment
 
@@ -111,15 +101,16 @@ The app automatically detects the storage mode:
 2. Connect your repository to Vercel
 3. Deploy automatically with IndexedDB mode
 
-### With Database
+### Configuration
 
-1. Set up your database (MySQL/PostgreSQL)
-2. Add `DATABASE_URL` to Vercel environment variables
-3. Deploy
+1. No additional setup required
+2. Deploy directly from GitHub
+3. Data automatically stored in browser
 
 ### Other Platforms
 
 The app works on any platform that supports Next.js:
+
 - Netlify
 - Railway
 - DigitalOcean App Platform
