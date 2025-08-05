@@ -16,8 +16,7 @@ export interface Event {
   location?: string; // 线下面试地址或线上会议链接
   contact?: string; // 联系人信息
   meetingId?: string; // 会议号
-  company?: string; // 公司名称
-  position?: string; // 职位
+
 }
 
 export interface RecurrencePattern {
