@@ -5,12 +5,19 @@ export interface Event {
   description?: string;
   startDate: Date;
   endDate: Date;
-  category: 'task' | 'bill' | 'note' | 'pomodoro' | 'personal';
+  category: 'task' | 'bill' | 'note' | 'pomodoro' | 'personal' | 'interview';
   color: string;
   recurrence?: RecurrencePattern;
   taskId?: string;
   billId?: string;
   noteId?: string;
+  // 面试相关字段
+  interviewType?: 'online' | 'offline';
+  location?: string; // 线下面试地址或线上会议链接
+  contact?: string; // 联系人信息
+  meetingId?: string; // 会议号
+  company?: string; // 公司名称
+  position?: string; // 职位
 }
 
 export interface RecurrencePattern {
