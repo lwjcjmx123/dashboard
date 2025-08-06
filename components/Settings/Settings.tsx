@@ -8,7 +8,9 @@ import {
   Bell,
   Database,
   Shield,
+  Bot,
 } from "lucide-react";
+import AISettings from "./AISettings";
 import { useClientUserSettings, exportAllData, importAllData, clearAllData } from "@/lib/client-data-hooks";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -388,6 +390,11 @@ const Settings: React.FC = () => {
             </div>
           );
         })}
+
+        {/* AI Settings */}
+        <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
+          <AISettings />
+        </div>
 
         {/* Data Management */}
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">

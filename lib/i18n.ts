@@ -3,6 +3,8 @@ export const translations = {
     // 通用
     loading: "加载中...",
     save: "保存",
+    saving: "保存中...",
+    testing: "测试中...",
     cancel: "取消",
     delete: "删除",
     edit: "编辑",
@@ -99,6 +101,31 @@ export const translations = {
     clearDataSuccess: "所有数据已清除！页面将刷新。",
     clearDataError: "清除数据失败，请重试。",
 
+    // AI设置
+    aiSettings: "AI设置",
+    aiParsingEnabled: "启用AI解析",
+    aiParsingDescription: "使用AI自动解析自然语言文本为日历事件",
+    apiKey: "API密钥",
+    apiKeyPlaceholder: "请输入您的API密钥",
+    baseUrl: "API基础URL",
+    baseUrlPlaceholder: "请输入API基础URL",
+    aiModel: "AI模型",
+    aiModelDescription: "选择要使用的AI模型",
+    testConnection: "测试连接",
+    saveConfiguration: "保存配置",
+    aiUsageInstructions: "使用说明",
+    aiConnectionSuccess: "AI连接测试成功！",
+    aiConnectionFailed: "AI连接测试失败，请检查配置",
+    aiConfigSaved: "AI配置已保存",
+    aiConfigSaveFailed: "保存AI配置失败",
+    aiParseButton: "AI解析",
+    aiParseInputPlaceholder: "输入事件描述，AI将自动解析时间、地点等信息...\n例如：明天下午3点在会议室A开会讨论项目进展",
+    aiParsing: "解析中...",
+    aiInputRequired: "请输入要解析的文本",
+    aiConfigRequired: "请先在设置中配置AI参数",
+    aiParseFailed: "AI解析失败，请重试",
+    aiParseSuccess: "AI解析成功！",
+
     // 隐私与安全
     privacySecurity: "隐私与安全",
     databaseStorage: "数据库存储",
@@ -157,7 +184,7 @@ export const translations = {
     upcomingTasks: "即将到期的任务",
     recentNotes: "最近笔记",
 
-    // 日期格式
+    // 日期时间
     today: "今天",
     yesterday: "昨天",
     tomorrow: "明天",
@@ -165,6 +192,15 @@ export const translations = {
     nextWeek: "下周",
     thisMonth: "本月",
     nextMonth: "下月",
+
+    // 星期几
+    sunday: "周日",
+    monday: "周一",
+    tuesday: "周二",
+    wednesday: "周三",
+    thursday: "周四",
+    friday: "周五",
+    saturday: "周六",
 
     // 日历
     month: "月",
@@ -192,7 +228,7 @@ export const translations = {
     contact: "联系人",
     contactName: "联系人姓名",
     eventDetails: "事件详情",
-    createQuickInterview: "创建快速面试",
+    createQuickInterview: "添加面试",
     createEvent: "创建事件",
     editEvent: "编辑事件",
     deleteEvent: "删除事件",
@@ -328,7 +364,6 @@ export const translations = {
     productivityInsights: "生产力洞察",
     averageSessionLength: "平均会话时长",
     mostProductiveDay: "最高效的一天",
-    monday: "周一",
     overdueTasks: "逾期任务",
     analyticsUpcomingBills: "即将到期账单",
 
@@ -341,6 +376,8 @@ export const translations = {
     // Common
     loading: "Loading...",
     save: "Save",
+    saving: "Saving...",
+    testing: "Testing...",
     cancel: "Cancel",
     delete: "Delete",
     edit: "Edit",
@@ -437,10 +474,36 @@ export const translations = {
       "Are you sure you want to clear all data? This action cannot be undone.",
     exportSuccess: "Data exported successfully!",
     exportError: "Failed to export data. Please try again.",
-    importSuccess: "Data imported successfully! The page will refresh to show new data.",
+    importSuccess:
+      "Data imported successfully! The page will refresh to show new data.",
     importError: "Failed to import data. Please check the file format.",
     clearDataSuccess: "All data has been cleared! The page will refresh.",
     clearDataError: "Failed to clear data. Please try again.",
+
+    // AI Settings
+    aiSettings: "AI Settings",
+    aiParsingEnabled: "Enable AI Parsing",
+    aiParsingDescription: "Use AI to automatically parse natural language text into calendar events",
+    apiKey: "API Key",
+    apiKeyPlaceholder: "Enter your API key",
+    baseUrl: "Base URL",
+    baseUrlPlaceholder: "Enter API base URL",
+    aiModel: "AI Model",
+    aiModelDescription: "Select the AI model to use",
+    testConnection: "Test Connection",
+    saveConfiguration: "Save Configuration",
+    aiUsageInstructions: "Usage Instructions",
+    aiConnectionSuccess: "AI connection test successful!",
+    aiConnectionFailed: "AI connection test failed, please check configuration",
+    aiConfigSaved: "AI configuration saved",
+    aiConfigSaveFailed: "Failed to save AI configuration",
+    aiParseButton: "AI Parse",
+    aiParseInputPlaceholder: "Enter event description, AI will automatically parse time, location and other information...\nExample: Meeting with John tomorrow at 3 PM in conference room A",
+    aiParsing: "Parsing...",
+    aiInputRequired: "Please enter text to parse",
+    aiConfigRequired: "Please configure AI parameters in settings first",
+    aiParseFailed: "AI parsing failed, please try again",
+    aiParseSuccess: "AI parsing successful!",
 
     // Privacy & Security
     privacySecurity: "Privacy & Security",
@@ -500,7 +563,7 @@ export const translations = {
     upcomingTasks: "Upcoming Tasks",
     recentNotes: "Recent Notes",
 
-    // Date formats
+    // Date/Time
     today: "Today",
     yesterday: "Yesterday",
     tomorrow: "Tomorrow",
@@ -508,6 +571,15 @@ export const translations = {
     nextWeek: "Next Week",
     thisMonth: "This Month",
     nextMonth: "Next Month",
+
+    // Days of week
+    sunday: "Sun",
+    monday: "Mon",
+    tuesday: "Tue",
+    wednesday: "Wed",
+    thursday: "Thu",
+    friday: "Fri",
+    saturday: "Sat",
 
     // 日历
     month: "Month",
@@ -608,7 +680,8 @@ export const translations = {
     finishEarly: "Finish Early",
     pomodoroCount: "Pomodoros",
     sessionCompleted: "Session Completed!",
-    sessionCompletedMessage: "Congratulations! You've completed a Pomodoro session.",
+    sessionCompletedMessage:
+      "Congratulations! You've completed a Pomodoro session.",
     sessionSummary: "Session Summary",
     taskWorkedOn: "Task Worked On",
     sessionDuration: "Session Duration",
@@ -672,7 +745,6 @@ export const translations = {
     productivityInsights: "Productivity Insights",
     averageSessionLength: "Average session length",
     mostProductiveDay: "Most productive day",
-    monday: "Monday",
     overdueTasks: "Overdue tasks",
     analyticsUpcomingBills: "Upcoming bills",
 

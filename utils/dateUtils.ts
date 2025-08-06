@@ -1,4 +1,8 @@
 import dayjs from 'dayjs';
+import weekday from 'dayjs/plugin/weekday';
+
+// 扩展dayjs插件
+dayjs.extend(weekday);
 
 export const formatDate = (date: Date, format: '12' | '24' = '24'): string => {
   return dayjs(date).format('MMM D, YYYY');
@@ -21,7 +25,8 @@ export const isThisWeek = (date: Date): boolean => {
 };
 
 export const getWeekDates = (date: Date): Date[] => {
-  const startOfWeek = dayjs(date).startOf('week');
+  // 使用周一作为一周的开始 (weekday(1) 表示周一)
+  const startOfWeek = dayjs(date).weekday(1).startOf('day');
   const week = [];
   for (let i = 0; i < 7; i++) {
     week.push(startOfWeek.add(i, 'day').toDate());
@@ -31,11 +36,24 @@ export const getWeekDates = (date: Date): Date[] => {
 
 export const getMonthDates = (date: Date): Date[] => {
   const startOfMonth = dayjs(date).startOf('month');
-  const daysInMonth = dayjs(date).daysInMonth();
+  const endOfMonth = dayjs(date).endOf('month');
+  
+  // 获取包含月初的那一周的周一
+  const startDate = startOfMonth.weekday() === 0 
+    ? startOfMonth.subtract(6, 'day') // 如果月初是周日，往前推6天到周一
+    : startOfMonth.weekday(1); // 否则获取那一周的周一
+    
+  // 获取包含月末的那一周的周日  
+  const endDate = endOfMonth.weekday() === 0
+    ? endOfMonth // 如果月末是周日，就是周日
+    : endOfMonth.weekday(7); // 否则获取那一周的周日
   
   const dates = [];
-  for (let day = 0; day < daysInMonth; day++) {
-    dates.push(startOfMonth.add(day, 'day').toDate());
+  let currentDate = startDate;
+  
+  while (currentDate.isBefore(endDate) || currentDate.isSame(endDate, 'day')) {
+    dates.push(currentDate.toDate());
+    currentDate = currentDate.add(1, 'day');
   }
   
   return dates;

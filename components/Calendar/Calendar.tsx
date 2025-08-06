@@ -7,7 +7,10 @@ import {
   X,
   Clock,
   Edit3,
+  Bot,
+  Wand2,
 } from "lucide-react";
+import { createAIParser } from "@/lib/ai-parser";
 import {
   useClientTasks,
   useClientBills,
@@ -25,6 +28,7 @@ import {
   formatTime,
 } from "@/utils/dateUtils";
 import DatePicker from "@/components/UI/DatePicker";
+import TimePicker from "@/components/UI/TimePicker";
 import dayjs from "dayjs";
 
 type CalendarView = "month" | "week" | "day";
@@ -61,6 +65,8 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
     contact: "",
     meetingId: "",
   });
+  const [aiText, setAiText] = useState("");
+  const [isAiParsing, setIsAiParsing] = useState(false);
   const { t } = useLanguage();
 
   const { tasks } = useClientTasks();
@@ -127,18 +133,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
 
   const allEvents = generateEventsFromData();
 
-  // 生成时间选项（整点和半小时）
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let hour = 0; hour < 24; hour++) {
-      const hourStr = hour.toString().padStart(2, "0");
-      options.push(`${hourStr}:00`);
-      options.push(`${hourStr}:30`);
-    }
-    return options;
-  };
 
-  const timeOptions = generateTimeOptions();
 
   // 处理事件点击查看详情
   const handleEventClick = (event: any) => {
@@ -258,6 +253,48 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
     setIsEditingEvent(false);
     setSelectedEvent(null);
     setShowAddEventModal(true);
+  };
+
+  // AI解析文本
+    const handleAiParse = async () => {
+      if (!aiText.trim()) {
+        alert(t("aiInputRequired"));
+        return;
+      }
+  
+      setIsAiParsing(true);
+      try {
+        const aiParser = createAIParser();
+        if (!aiParser) {
+          alert(t("aiConfigRequired"));
+          return;
+        }
+        const parsedData = await aiParser.parseTextToEvent(aiText);
+      
+      // 填充解析结果到表单
+       setNewEvent({
+          ...newEvent,
+          title: parsedData.title || newEvent.title,
+          description: parsedData.description || newEvent.description,
+          startDate: parsedData.startDate || newEvent.startDate,
+          startTime: parsedData.startTime || newEvent.startTime,
+          endDate: parsedData.endDate || newEvent.endDate,
+          endTime: parsedData.endTime || newEvent.endTime,
+          category: (parsedData.category === 'meeting' || parsedData.category === 'task') ? 'personal' : parsedData.category,
+          location: parsedData.location || newEvent.location,
+          contact: parsedData.contact || newEvent.contact,
+          interviewType: parsedData.interviewType || newEvent.interviewType,
+          meetingId: parsedData.meetingId || newEvent.meetingId,
+        });
+      
+      // 清空AI文本
+      setAiText("");
+    } catch (error) {
+      console.error("AI解析失败:", error);
+      alert(t("aiParseFailed"));
+    } finally {
+      setIsAiParsing(false);
+    }
   };
 
   // 保存事件
@@ -454,7 +491,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
             >
               <CalendarIcon size={20} />
-              快速面试
+              {t("createQuickInterview")}
             </button>
           </div>
         </div>
@@ -465,12 +502,12 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
         {/* Days of Week Header (for month and week view) */}
         {(view === "month" || view === "week") && (
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
               <div
                 key={day}
                 className="p-4 text-center text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700"
               >
-                {day}
+                {t(day as any)}
               </div>
             ))}
           </div>
@@ -610,64 +647,110 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
           </div>
         )}
 
-        {/* Day View */}
+        {/* Day View - Timeline Style */}
         {view === "day" && (
-          <div className="p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {dayjs(currentDate).format("dddd, MMMM D, YYYY")}
-              </h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {getEventsForDate(currentDate).length} events
-              </div>
-            </div>
-            <div className="space-y-3">
-              {getEventsForDate(currentDate).length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  No events for this day
+          <div className="flex">
+            {/* Time Column */}
+            <div className="w-20 border-r border-gray-200 dark:border-gray-700">
+              {Array.from({ length: 24 }, (_, hour) => (
+                <div
+                  key={hour}
+                  className="h-16 flex items-start justify-end pr-3 pt-1 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800"
+                >
+                  {hour === 0 ? "12 AM" : hour < 12 ? `${hour} AM` : hour === 12 ? "12 PM" : `${hour - 12} PM`}
                 </div>
-              ) : (
-                getEventsForDate(currentDate).map((event: any) => (
+              ))}
+            </div>
+            
+            {/* Events Column */}
+            <div className="flex-1 relative">
+              {/* Hour Grid Lines */}
+              {Array.from({ length: 24 }, (_, hour) => (
+                <div
+                  key={hour}
+                  className="h-16 border-b border-gray-100 dark:border-gray-800 relative"
+                >
+                  {/* Half-hour line */}
+                  <div className="absolute top-8 left-0 right-0 h-px bg-gray-50 dark:bg-gray-900"></div>
+                </div>
+              ))}
+              
+              {/* Current Time Indicator */}
+              {isToday(currentDate) && (() => {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                const topPosition = (currentHour * 64) + (currentMinute * 64 / 60);
+                
+                return (
                   <div
-                    key={event.id}
-                    className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700 transition-all duration-200 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                    onClick={() => handleEventClick(event)}
+                    className="absolute left-0 right-0 z-10"
+                    style={{ top: `${topPosition}px` }}
                   >
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: event.color }}
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white">
-                        {event.title}
-                      </h4>
-                      {event.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {event.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        {formatTime(new Date(event.startDate))} -{" "}
-                        {formatTime(new Date(event.endDate))}
-                      </p>
-                    </div>
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        event.category === "task"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                          : event.category === "bill"
-                          ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          : event.category === "pomodoro"
-                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
-                          : event.category === "interview"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-                      }`}
-                    >
-                      {event.category}
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-800 -ml-1.5"></div>
+                      <div className="flex-1 h-0.5 bg-red-500"></div>
                     </div>
                   </div>
-                ))
+                );
+              })()}
+              
+              {/* Events */}
+              {getEventsForDate(currentDate).map((event: any) => {
+                const startTime = dayjs(event.startDate);
+                const endTime = dayjs(event.endDate);
+                const startHour = startTime.hour();
+                const startMinute = startTime.minute();
+                const endHour = endTime.hour();
+                const endMinute = endTime.minute();
+                
+                const topPosition = (startHour * 64) + (startMinute * 64 / 60);
+                const duration = (endHour - startHour) * 64 + ((endMinute - startMinute) * 64 / 60);
+                const height = Math.max(duration, 32); // Minimum height of 32px
+                
+                return (
+                  <div
+                    key={event.id}
+                    onClick={() => handleEventClick(event)}
+                    className="absolute left-2 right-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm border border-white/20"
+                    style={{
+                      top: `${topPosition}px`,
+                      height: `${height}px`,
+                      backgroundColor: event.color,
+                      minHeight: '32px'
+                    }}
+                  >
+                    <div className="p-2 text-white text-xs h-full flex flex-col">
+                      <div className="font-medium truncate">
+                        {event.title}
+                      </div>
+                      <div className="text-white/80 text-xs mt-1">
+                        {startTime.format("HH:mm")} - {endTime.format("HH:mm")}
+                      </div>
+                      {event.description && height > 48 && (
+                        <div className="text-white/70 text-xs mt-1 truncate">
+                          {event.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* No Events Message */}
+              {getEventsForDate(currentDate).length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    <CalendarIcon size={48} className="mx-auto mb-2 opacity-50" />
+                    <p>No events for this day</p>
+                    <button
+                      onClick={handleAddEvent}
+                      className="mt-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                    >
+                      Add an event
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -759,9 +842,9 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
 
       {/* 添加事件模态框 */}
       {showAddEventModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {isEditingEvent ? "编辑事件" : "添加事件"}
               </h3>
@@ -777,7 +860,44 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <div className="space-y-3">
+              {/* AI解析区域 */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot size={20} className="text-blue-600 dark:text-blue-400" />
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                    {t("aiSettings")}
+                  </h4>
+                </div>
+                <div className="space-y-2">
+                  <textarea
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="w-full px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    placeholder={t("aiParseInputPlaceholder")}
+                    rows={3}
+                  />
+                  <button
+                    onClick={handleAiParse}
+                    disabled={isAiParsing || !aiText.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  >
+                    {isAiParsing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {t("aiParsing")}
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={16} />
+                        {t("aiParseButton")}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
               {/* 事件类型选择 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -839,7 +959,7 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="输入事件描述"
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
@@ -869,19 +989,15 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     开始时间
                   </label>
-                  <select
+                  <TimePicker
                     value={newEvent.startTime}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, startTime: e.target.value })
+                    onChange={(time) =>
+                      setNewEvent({ ...newEvent, startTime: time })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {timeOptions.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="选择开始时间"
+                    className="w-full"
+                    timeIntervals={30}
+                  />
                 </div>
               </div>
 
@@ -911,27 +1027,21 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     结束时间
                   </label>
-                  <select
+                  <TimePicker
                     value={newEvent.endTime}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, endTime: e.target.value })
+                    onChange={(time) =>
+                      setNewEvent({ ...newEvent, endTime: time })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    {timeOptions.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="选择结束时间"
+                    className="w-full"
+                    timeIntervals={30}
+                  />
                 </div>
               </div>
 
               {/* 面试相关字段 */}
               {newEvent.category === "interview" && (
                 <>
-                  {/* 公司和职位 */}
-
                   {/* 面试类型 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1029,9 +1139,10 @@ const Calendar: React.FC<CalendarProps> = ({ selectedDate, onDateSelect }) => {
                   </div>
                 </>
               )}
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 rounded-b-lg">
               <button
                 onClick={() => {
                   setShowAddEventModal(false);
