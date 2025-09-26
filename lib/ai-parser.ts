@@ -1,4 +1,4 @@
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * AI解析服务类，用于将自然语言文本解析为结构化的日历事件数据
@@ -8,7 +8,11 @@ export class AIParser {
   private baseUrl: string;
   private model: string;
 
-  constructor(apiKey: string, baseUrl: string = 'https://api.siliconflow.cn', model: string = 'Qwen/Qwen2.5-7B-Instruct') {
+  constructor(
+    apiKey: string,
+    baseUrl: string = "https://api.siliconflow.cn",
+    model: string = "Qwen/Qwen2.5-7B-Instruct"
+  ) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.model = model;
@@ -26,15 +30,15 @@ export class AIParser {
     startTime: string;
     endDate: string;
     endTime: string;
-    category: 'personal' | 'interview' | 'meeting' | 'task';
+    category: "personal" | "interview" | "meeting" | "task";
     location?: string;
     contact?: string;
-    interviewType?: 'online' | 'offline';
+    interviewType?: "online" | "offline";
     meetingId?: string;
   }> {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
+      const today = new Date().toISOString().split("T")[0];
+
       // 定义提示词
       const prompt = `
 解析以下文本并提取日历事件信息："${text}"
@@ -76,30 +80,33 @@ export class AIParser {
       `;
 
       const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json; charset=utf-8',
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json; charset=utf-8",
         },
         body: JSON.stringify({
           model: this.model,
           messages: [
             {
-              role: 'system',
-              content: '你是一个智能日历助手，负责将自然语言文本解析为结构化的日历事件数据。请严格按照JSON格式返回结果。',
+              role: "system",
+              content:
+                "你是一个智能日历助手，负责将自然语言文本解析为结构化的日历事件数据。请严格按照JSON格式返回结果。",
             },
             {
-              role: 'user',
+              role: "user",
               content: prompt,
             },
           ],
-          response_format: { type: 'json_object' },
+          response_format: { type: "json_object" },
           temperature: 0.3,
           max_tokens: 1000,
+          stream: false, // 明确指定为非流式调用
+          url_thinking: false, // 关键：在非流式调用中关闭此功能
         }),
       });
 
-      console.log('AI API 响应状态码：', response.status);
+      console.log("AI API 响应状态码：", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -107,35 +114,42 @@ export class AIParser {
       }
 
       const responseData = await response.json();
-      console.log('AI API 响应数据：', responseData);
+      console.log("AI API 响应数据：", responseData);
 
       const result = responseData.choices[0].message.content;
-      console.log('AI 返回的JSON字符串：', result);
+      console.log("AI 返回的JSON字符串：", result);
 
       const parsedResult = JSON.parse(result);
-      console.log('解析后的结构化数据：', parsedResult);
+      console.log("解析后的结构化数据：", parsedResult);
 
       // 验证必需字段
-      if (!parsedResult.title || !parsedResult.startDate || !parsedResult.startTime) {
-        throw new Error('AI解析结果缺少必需字段');
+      if (
+        !parsedResult.title ||
+        !parsedResult.startDate ||
+        !parsedResult.startTime
+      ) {
+        throw new Error("AI解析结果缺少必需字段");
       }
 
       // 设置默认值
       return {
         title: parsedResult.title,
-        description: parsedResult.description || '',
+        description: parsedResult.description || "",
         startDate: parsedResult.startDate,
         startTime: parsedResult.startTime,
         endDate: parsedResult.endDate || parsedResult.startDate,
-        endTime: parsedResult.endTime || this.addOneHour(parsedResult.startTime),
-        category: parsedResult.category || 'personal',
-        location: parsedResult.location || '',
-        contact: parsedResult.contact || '',
-        interviewType: parsedResult.interviewType || (parsedResult.category === 'interview' ? 'online' : undefined),
-        meetingId: parsedResult.meetingId || '',
+        endTime:
+          parsedResult.endTime || this.addOneHour(parsedResult.startTime),
+        category: parsedResult.category || "personal",
+        location: parsedResult.location || "",
+        contact: parsedResult.contact || "",
+        interviewType:
+          parsedResult.interviewType ||
+          (parsedResult.category === "interview" ? "online" : undefined),
+        meetingId: parsedResult.meetingId || "",
       };
     } catch (error) {
-      console.error('AI 解析失败:', error);
+      console.error("AI 解析失败:", error);
       throw new Error(`AI 解析失败: ${error}`);
     }
   }
@@ -146,9 +160,11 @@ export class AIParser {
    * @returns 添加一小时后的时间字符串
    */
   private addOneHour(timeStr: string): string {
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes] = timeStr.split(":").map(Number);
     const newHours = (hours + 1) % 24;
-    return `${newHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    return `${newHours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
   }
 }
 
@@ -166,9 +182,9 @@ export interface AIConfig {
  * 默认AI配置
  */
 export const defaultAIConfig: AIConfig = {
-  apiKey: '',
-  baseUrl: 'https://api.siliconflow.cn',
-  model: 'Qwen/Qwen2.5-7B-Instruct',
+  apiKey: "",
+  baseUrl: "https://api.siliconflow.cn",
+  model: "Qwen/Qwen2.5-7B-Instruct",
   enabled: false,
 };
 
@@ -176,15 +192,15 @@ export const defaultAIConfig: AIConfig = {
  * 从localStorage获取AI配置
  */
 export const getAIConfig = (): AIConfig => {
-  if (typeof window === 'undefined') return defaultAIConfig;
-  
+  if (typeof window === "undefined") return defaultAIConfig;
+
   try {
-    const stored = localStorage.getItem('ai-config');
+    const stored = localStorage.getItem("ai-config");
     if (stored) {
       return { ...defaultAIConfig, ...JSON.parse(stored) };
     }
   } catch (error) {
-    console.error('获取AI配置失败:', error);
+    console.error("获取AI配置失败:", error);
   }
   return defaultAIConfig;
 };
@@ -193,12 +209,12 @@ export const getAIConfig = (): AIConfig => {
  * 保存AI配置到localStorage
  */
 export const saveAIConfig = (config: AIConfig): void => {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   try {
-    localStorage.setItem('ai-config', JSON.stringify(config));
+    localStorage.setItem("ai-config", JSON.stringify(config));
   } catch (error) {
-    console.error('保存AI配置失败:', error);
+    console.error("保存AI配置失败:", error);
   }
 };
 
@@ -207,10 +223,10 @@ export const saveAIConfig = (config: AIConfig): void => {
  */
 export const createAIParser = (): AIParser | null => {
   const config = getAIConfig();
-  
+
   if (!config.enabled || !config.apiKey) {
     return null;
   }
-  
+
   return new AIParser(config.apiKey, config.baseUrl, config.model);
 };
